@@ -13,29 +13,40 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  // Listen for live changes — updates rota for all viewers instantly
+  let rotaLoaded = false, staffLoaded = false;
+
+  function tryRefresh() {
+    if (rotaLoaded && staffLoaded && typeof window.refreshAll === "function") {
+      // Replace the actual JS arrays used by the app
+      ROTA.length = 0;
+      window._fbRota.forEach(r => ROTA.push(r));
+      STAFF.length = 0;
+      window._fbStaff.forEach(s => STAFF.push(s));
+      window.refreshAll();
+    }
+  }
+
   onValue(ref(db, "rota"), (snapshot) => {
     const data = snapshot.val();
     if (data) {
-      window._firebaseLoaded = true;
-      window.ROTA = data;
-      if (typeof window.refreshAll === "function") window.refreshAll();
+      window._fbRota = Array.isArray(data) ? data : Object.values(data);
+      rotaLoaded = true;
+      tryRefresh();
     }
   });
 
   onValue(ref(db, "staff"), (snapshot) => {
     const data = snapshot.val();
     if (data) {
-      window._firebaseLoaded = true;
-      window.STAFF = data;
-      if (typeof window.refreshAll === "function") window.refreshAll();
+      window._fbStaff = Array.isArray(data) ? data : Object.values(data);
+      staffLoaded = true;
+      tryRefresh();
     }
   });
 
-  // Expose save function to the rest of the app
   window.saveRotaToFirebase = () => {
-    set(ref(db, "rota"), window.ROTA);
-    set(ref(db, "staff"), window.STAFF);
+    set(ref(db, "rota"), ROTA);
+    set(ref(db, "staff"), STAFF);
   };
 </script>
 <style>
@@ -613,8 +624,6 @@ function saveChanges(){
 }
 function refreshAll(){renderView();runFilter();renderStaff();popFilterDropdowns();}
 window.refreshAll = refreshAll;
-window.ROTA = ROTA;
-window.STAFF = STAFF;
 
 // ─── PASSWORD ─────────────────────────────────
 let adminOn=false;
@@ -651,13 +660,6 @@ function showToast(msg){const t=document.getElementById("toast");t.textContent=m
 renderView();
 popFilterDropdowns();
 runFilter();
-// Seed Firebase with default data if it's the first time
-setTimeout(()=>{
-  if(typeof window.saveRotaToFirebase==="function"){
-    // Only seed if Firebase hasn't loaded data yet (database was null/empty)
-    if(!window._firebaseLoaded) window.saveRotaToFirebase();
-  }
-}, 2000);
 </script>
 </body>
 </html>
