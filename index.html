@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEN NOODS — Staff Rota</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = { databaseURL: "https://sennoods-rota-default-rtdb.firebaseio.com" };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Listen for live changes — updates rota for all viewers instantly
+  onValue(ref(db, "rota"), (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      window._firebaseLoaded = true;
+      window.ROTA = data;
+      if (typeof window.refreshAll === "function") window.refreshAll();
+    }
+  });
+
+  onValue(ref(db, "staff"), (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      window._firebaseLoaded = true;
+      window.STAFF = data;
+      if (typeof window.refreshAll === "function") window.refreshAll();
+    }
+  });
+
+  // Expose save function to the rest of the app
+  window.saveRotaToFirebase = () => {
+    set(ref(db, "rota"), window.ROTA);
+    set(ref(db, "staff"), window.STAFF);
+  };
+</script>
+<style>
+:root{--bg:#f0ece4;--ink:#1a1612;--amber:#e8940a;--amber-lt:#fdf3dc;--blue:#1e4fd4;--blue-lt:#dce8ff;--cyan:#0891b2;--cyan-lt:#cffafe;--green:#15803d;--green-lt:#dcfce7;--pink:#be185d;--pink-lt:#fce7f3;--purple:#7c3aed;--grey:#6b7280;--grey-lt:#f3f0ea;--header:#1e293b;--shadow:0 2px 12px rgba(0,0,0,.1);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+.nav{background:var(--header);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.nav-brand{display:flex;align-items:center;gap:10px;}
+.nav-brand .emoji{font-size:20px;}
+.nav-brand .name{font-family:'Bebas Neue',cursive;font-size:22px;color:var(--amber);letter-spacing:2px;}
+.nav-brand .sub{font-family:'DM Mono',monospace;font-size:9px;color:#64748b;letter-spacing:2px;text-transform:uppercase;}
+.nav-tabs{display:flex;gap:3px;flex-wrap:wrap;}
+.nav-tab{padding:6px 12px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;transition:all .15s;letter-spacing:.5px;background:transparent;color:#94a3b8;}
+.nav-tab.active{background:var(--amber);color:var(--header);}
+.nav-tab:hover:not(.active){background:#334155;color:#e2e8f0;}
+.page{display:none;padding:20px;}
+.page.active{display:block;}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.page-title{font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:2px;color:var(--header);}
+.page-sub{font-size:11px;color:var(--grey);font-family:'DM Mono',monospace;letter-spacing:1px;}
+.legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;}
+.leg-dot{width:10px;height:10px;border-radius:2px;}
+/* WEEK BLOCK */
+.week-block{margin-bottom:22px;}
+.week-label{background:var(--header);color:var(--amber);font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:2px;padding:5px 14px;border-radius:6px 6px 0 0;display:inline-block;}
+.rota-table-wrap{overflow-x:auto;border-radius:0 6px 6px 6px;box-shadow:var(--shadow);}
+.rota-table{border-collapse:collapse;width:100%;min-width:860px;background:white;}
+.rota-table td{border:1px solid #ddd;padding:5px 8px;font-size:11px;vertical-align:top;white-space:nowrap;}
+.row-label{background:var(--header);color:white;font-size:10px;font-weight:700;letter-spacing:.5px;white-space:nowrap;min-width:140px;}
+.cell-date{background:#1e3a5f;color:white;text-align:center;font-weight:700;font-size:11px;}
+.cell-day{background:#1e3a5f;color:#93c5fd;text-align:center;font-size:10px;font-weight:500;}
+.cell-place{background:#1e3a5f;color:#cbd5e1;text-align:center;font-size:10px;}
+.cell-netil{background:var(--blue-lt);text-align:center;font-weight:700;color:var(--blue);}
+.cell-van{background:var(--cyan-lt);text-align:center;font-weight:700;color:var(--cyan);}
+.cell-staff-v{background:#f8fafc;text-align:center;font-size:10px;color:var(--grey);}
+.cell-base{background:var(--green-lt);text-align:center;font-weight:700;color:var(--green);}
+.cell-empty{background:white;}
+.weekend .cell-date,.weekend .cell-day,.weekend .cell-place{background:#5b21b6;}
+.weekend .cell-netil{background:var(--pink-lt);color:var(--pink);}
+.weekend .cell-van{background:#fae8ff;color:var(--purple);}
+.weekend .cell-base{background:#fdf4ff;color:var(--pink);}
+.weekend .cell-staff-v{background:#fdf4ff;}
+/* FILTER */
+.filter-bar{background:white;border-radius:10px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow);display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+.filter-group{display:flex;flex-direction:column;gap:4px;}
+.filter-label{font-size:10px;font-weight:700;color:var(--grey);letter-spacing:1px;text-transform:uppercase;}
+.filter-select{border:1.5px solid #e2e8f0;border-radius:6px;padding:7px 10px;font-size:12px;font-family:'DM Sans',sans-serif;background:white;color:var(--ink);outline:none;min-width:130px;transition:border-color .15s;}
+.filter-select:focus{border-color:var(--amber);}
+.results-count{font-size:11px;color:var(--grey);font-family:'DM Mono',monospace;margin-bottom:8px;}
+.filter-table-wrap{overflow-x:auto;border-radius:8px;box-shadow:var(--shadow);}
+.filter-table{border-collapse:collapse;width:100%;min-width:580px;background:white;}
+.filter-table thead tr{background:var(--header);}
+.filter-table th{padding:9px 12px;font-size:10px;letter-spacing:1px;color:white;text-align:left;white-space:nowrap;}
+.filter-table td{padding:7px 12px;font-size:12px;border-bottom:1px solid #f1f5f9;white-space:nowrap;}
+.filter-table tr:hover td{background:#fafaf8;}
+.filter-table tr.f-weekend td{background:#fdf4ff;}
+.role-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.5px;}
+.role-netil{background:var(--blue-lt);color:var(--blue);}
+.role-van{background:var(--cyan-lt);color:var(--cyan);}
+.role-base{background:var(--green-lt);color:var(--green);}
+.staff-chip{display:inline-block;padding:2px 7px;border-radius:12px;font-size:11px;font-weight:700;margin:1px;}
+.no-results{padding:40px;text-align:center;color:var(--grey);font-size:13px;}
+/* STAFF */
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;margin-bottom:24px;}
+.staff-card{background:white;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+.staff-card-header{padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.staff-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:16px;color:white;flex-shrink:0;}
+.staff-name-lg{font-weight:700;font-size:15px;}
+.staff-role-tag{font-size:10px;color:var(--grey);font-family:'DM Mono',monospace;letter-spacing:1px;}
+.staff-stats{display:flex;padding:0 16px 10px;gap:10px;}
+.stat-box{flex:1;background:var(--grey-lt);border-radius:8px;padding:8px 6px;text-align:center;}
+.stat-num{font-family:'Bebas Neue',cursive;font-size:22px;line-height:1;}
+.stat-lbl{font-size:9px;color:var(--grey);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.staff-shifts{padding:0 16px 14px;}
+.shift-item{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f3f4f6;font-size:11px;}
+.shift-item:last-child{border-bottom:none;}
+.shift-date{color:var(--grey);font-family:'DM Mono',monospace;font-size:10px;}
+.summary-wrap{overflow-x:auto;border-radius:10px;box-shadow:var(--shadow);margin-top:20px;margin-bottom:20px;}
+.summary-table{border-collapse:collapse;width:100%;background:white;min-width:480px;}
+.summary-table thead tr{background:var(--header);}
+.summary-table th{padding:9px 12px;font-size:10px;letter-spacing:1px;color:white;text-align:center;white-space:nowrap;}
+.summary-table th:first-child{text-align:left;}
+.summary-table td{padding:8px 12px;font-size:12px;border-bottom:1px solid #f1f5f9;text-align:center;}
+.summary-table td:first-child{text-align:left;font-weight:700;}
+.summary-table tr:hover td{background:#fafaf8;}
+.total-cell{font-family:'Bebas Neue',cursive;font-size:18px;color:var(--amber);}
+.zero-cell{color:#d1d5db;}
+/* ADMIN */
+.admin-header{margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.admin-title{font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:2px;color:var(--header);}
+.admin-badge{background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:1px;}
+.btn{padding:8px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:700;transition:all .15s;letter-spacing:.5px;}
+.btn-amber{background:var(--amber);color:white;}
+.btn-amber:hover{background:#c97d08;}
+.btn-grey{background:#e2e8f0;color:var(--ink);}
+.btn-grey:hover{background:#cbd5e1;}
+.btn-red{background:#fee2e2;color:#b91c1c;}
+.btn-red:hover{background:#fecaca;}
+.admin-info{background:var(--amber-lt);border:1px solid var(--amber);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:14px;}
+.admin-info strong{color:var(--amber);}
+.save-bar{background:var(--header);color:white;padding:12px 20px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+.unsaved{display:inline-block;width:8px;height:8px;background:var(--amber);border-radius:50%;margin-right:6px;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.edit-table-wrap{overflow-x:auto;border-radius:8px;box-shadow:var(--shadow);margin-bottom:20px;}
+.edit-table{border-collapse:collapse;width:100%;min-width:860px;background:white;}
+.edit-table th{background:var(--header);color:white;padding:8px 10px;font-size:10px;letter-spacing:1px;text-align:left;white-space:nowrap;}
+.edit-table td{padding:4px 6px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+.edit-table tr:hover td{background:#fafaf8;}
+.edit-table tr.weekend-row td{background:#fdf4ff;}
+.edit-table tr.weekend-row:hover td{background:#fae8ff;}
+.editable{border:1px solid transparent;border-radius:4px;padding:4px 7px;font-size:11px;font-family:'DM Sans',sans-serif;background:transparent;width:100%;outline:none;cursor:pointer;transition:all .15s;}
+.editable:focus{background:white;border-color:var(--amber);box-shadow:0 0 0 2px var(--amber-lt);cursor:text;}
+.cell-date-admin{font-weight:700;font-size:11px;color:#1e3a5f;white-space:nowrap;padding:4px 8px;}
+.cell-day-admin{font-size:11px;color:var(--grey);padding:4px 8px;}
+/* STAFF MANAGER */
+.staff-manager{background:white;border-radius:10px;box-shadow:var(--shadow);padding:16px;margin-bottom:20px;}
+.staff-manager-title{font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:1px;color:var(--header);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.staff-tags-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.staff-tag-admin{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:700;}
+.staff-tag-remove{cursor:pointer;opacity:.5;font-size:16px;line-height:1;transition:opacity .1s;}
+.staff-tag-remove:hover{opacity:1;}
+.add-staff-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
+.add-group{display:flex;flex-direction:column;gap:4px;}
+.add-label{font-size:10px;font-weight:700;color:var(--grey);letter-spacing:1px;text-transform:uppercase;}
+.staff-add-input{border:1.5px solid #e2e8f0;border-radius:6px;padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;width:160px;}
+.staff-add-input:focus{border-color:var(--amber);}
+.role-input{width:180px;}
+.color-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.color-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .1s;}
+.color-swatch.selected{border-color:var(--ink);transform:scale(1.2);}
+/* LOCK */
+.lock-screen{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 54px);}
+.lock-card{background:white;border-radius:16px;padding:44px 36px;width:340px;box-shadow:0 8px 40px rgba(0,0,0,.12);text-align:center;}
+.lock-icon{font-size:44px;margin-bottom:14px;}
+.lock-title{font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:2px;color:var(--header);margin-bottom:5px;}
+.lock-sub{font-size:12px;color:var(--grey);margin-bottom:28px;}
+.pin-row{display:flex;gap:10px;justify-content:center;margin-bottom:22px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#e2e8f0;transition:background .15s;}
+.pin-dot.filled{background:var(--amber);}
+.pin-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.pin-key{height:50px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:20px;font-weight:600;cursor:pointer;background:white;transition:all .1s;color:var(--ink);}
+.pin-key:hover{background:var(--amber-lt);border-color:var(--amber);}
+.pin-key:active{transform:scale(.95);}
+.pin-key.del{font-size:13px;color:var(--grey);}
+.pin-error{color:#ef4444;font-size:12px;margin-top:10px;display:none;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--header);color:white;padding:12px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{transform:translateY(0);opacity:1;}
+@media(max-width:640px){.nav{padding:0 10px;}.nav-brand .sub{display:none;}.nav-tab{padding:5px 7px;font-size:10px;}.page{padding:12px 8px;}.staff-grid{grid-template-columns:1fr;}.lock-card{width:300px;padding:28px 20px;}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <span class="emoji">🍜</span>
+    <div><div class="name">SEN NOODS</div><div class="sub">Staff Rota · Netil Market</div></div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('view')">📅 Rota</button>
+    <button class="nav-tab" onclick="showPage('filter')">🔍 Filter</button>
+    <button class="nav-tab" onclick="showPage('staff')">👥 Staff</button>
+    <button class="nav-tab" onclick="showPage('admin-gate')">🔐 Admin</button>
+  </div>
+</nav>
+
+<!-- ══ VIEW ══ -->
+<div id="page-view" class="page active">
+  <div class="page-header">
+    <div><div class="page-title">📅 Weekly Rota</div><div class="page-sub">Read-only · Contact admin to make changes</div></div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:var(--blue)"></div>Netil</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--cyan)"></div>Van</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>Base</div>
+      <div class="leg"><div class="leg-dot" style="background:var(--purple)"></div>Weekend</div>
+    </div>
+  </div>
+  <div id="view-content"></div>
+</div>
+
+<!-- ══ FILTER ══ -->
+<div id="page-filter" class="page">
+  <div class="page-header">
+    <div><div class="page-title">🔍 Filter Shifts</div><div class="page-sub">Search by name, role, day or week</div></div>
+  </div>
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-label">Staff Name</div>
+      <select class="filter-select" id="f-staff" onchange="runFilter()"><option value="">All Staff</option></select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Role</div>
+      <select class="filter-select" id="f-role" onchange="runFilter()">
+        <option value="">All Roles</option>
+        <option value="NETIL">NETIL</option>
+        <option value="VAN">VAN</option>
+        <option value="BASE">BASE</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Day</div>
+      <select class="filter-select" id="f-day" onchange="runFilter()">
+        <option value="">All Days</option>
+        <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+        <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Week</div>
+      <select class="filter-select" id="f-week" onchange="runFilter()"><option value="">All Weeks</option></select>
+    </div>
+    <button class="btn btn-grey" onclick="clearFilter()">✕ Clear</button>
+  </div>
+  <div class="results-count" id="filter-count"></div>
+  <div class="filter-table-wrap">
+    <table class="filter-table">
+      <thead><tr><th>STAFF</th><th>DATE</th><th>DAY</th><th>ROLE</th><th>PLACE / LOCATION</th><th>WEEK</th></tr></thead>
+      <tbody id="filter-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ STAFF ══ -->
+<div id="page-staff" class="page">
+  <div class="page-header">
+    <div><div class="page-title">👥 Staff Overview</div><div class="page-sub">Shift counts &amp; schedule per person</div></div>
+  </div>
+  <div class="staff-grid" id="staff-grid"></div>
+  <div class="page-title" style="font-size:18px;margin-bottom:10px;">📊 Shift Summary Table</div>
+  <div class="summary-wrap"><table class="summary-table" id="summary-table"></table></div>
+</div>
+
+<!-- ══ ADMIN GATE ══ -->
+<div id="page-admin-gate" class="page">
+  <div class="lock-screen">
+    <div class="lock-card">
+      <div class="lock-icon">🔐</div>
+      <div class="lock-title">Admin Access</div>
+      <div class="lock-sub">Enter the admin password to edit the rota</div>
+      <div style="margin-bottom:16px;">
+        <input type="password" id="pw-input" class="staff-add-input" placeholder="Password" style="width:100%;font-size:15px;padding:10px 14px;letter-spacing:2px;" onkeydown="if(event.key==='Enter')checkPassword()"/>
+      </div>
+      <button class="btn btn-amber" style="width:100%;padding:11px;font-size:14px;" onclick="checkPassword()">Unlock Admin</button>
+      <div class="pin-error" id="pin-error">❌ Incorrect password. Try again.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN EDIT ══ -->
+<div id="page-admin" class="page">
+  <div class="admin-header">
+    <div><div class="admin-title">✏️ Admin — Edit Rota</div><span class="admin-badge">🔓 ADMIN MODE</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-red" onclick="adminLogout()">🔒 Lock</button>
+      <button class="btn btn-amber" onclick="saveChanges()">💾 Save Changes</button>
+    </div>
+  </div>
+  <div class="save-bar" id="save-bar" style="display:none;">
+    <div style="font-size:12px;"><span class="unsaved"></span>You have unsaved changes</div>
+    <button class="btn btn-amber" onclick="saveChanges()">💾 Save Now</button>
+  </div>
+  <div class="admin-info"><strong>✏️ How to edit:</strong> Click any NETIL, VAN LOCATION, VAN STAFFS or BASE cell to type. Use commas to separate names. Hit Enter or click away — changes save to all pages when you press Save.</div>
+
+  <!-- Staff Manager -->
+  <div class="staff-manager">
+    <div class="staff-manager-title">👥 Staff Members <span style="font-size:11px;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--grey);letter-spacing:0">(add or remove staff)</span></div>
+    <div class="staff-tags-wrap" id="staff-tags"></div>
+    <div class="add-staff-row">
+      <div class="add-group"><div class="add-label">Name</div><input type="text" class="staff-add-input" id="new-name" placeholder="e.g. ALEX" maxlength="20"/></div>
+      <div class="add-group"><div class="add-label">Role</div><input type="text" class="staff-add-input role-input" id="new-role" placeholder="e.g. Netil / Van"/></div>
+      <div class="add-group">
+        <div class="add-label">Colour</div>
+        <div class="color-row" id="color-picker"></div>
+      </div>
+      <div class="add-group" style="justify-content:flex-end"><button class="btn btn-amber" onclick="addStaff()">+ Add</button></div>
+    </div>
+  </div>
+
+  <div id="admin-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────
+const ADMIN_PIN = "9155";
+
+// ─── STAFF ────────────────────────────────────
+let STAFF = [
+  {name:"USH",     color:"#F59E0B", role:"Netil / Van"},
+  {name:"BABIN",   color:"#8B5CF6", role:"Netil / Van / Base"},
+  {name:"ANES",    color:"#06B6D4", role:"Netil / Van"},
+  {name:"LEO",     color:"#10B981", role:"Netil / Van"},
+  {name:"IMI",     color:"#F43F5E", role:"Netil / Van"},
+  {name:"AHMED",   color:"#3B82F6", role:"Netil / Van"},
+  {name:"JOHNNY",  color:"#F97316", role:"Van"},
+  {name:"HASSAN",  color:"#84CC16", role:"Netil / Van"},
+  {name:"MELISSA", color:"#EC4899", role:"Base"},
+  {name:"GODFREY", color:"#6366F1", role:"Van"},
+];
+const PALETTE=["#F59E0B","#8B5CF6","#06B6D4","#10B981","#F43F5E","#3B82F6","#F97316","#84CC16","#EC4899","#6366F1","#EF4444","#14B8A6","#A855F7","#22C55E","#0EA5E9","#F472B6"];
+let selColor=PALETTE[0];
+
+// ─── ROTA DATA ────────────────────────────────
+let ROTA = [
+  {week:"Wk1 – 23 Mar",days:[
+    {date:"23-03-2026",day:"Monday",   netil:"USH",          vanLoc:"",                                vanStaff:"",                   base:"MELISSA"},
+    {date:"24-03-2026",day:"Tuesday",  netil:"BABIN",        vanLoc:"IMPERIAL",                        vanStaff:"IMI,LEO,ANES,JOHNNY",base:""},
+    {date:"25-03-2026",day:"Wednesday",netil:"ANES",         vanLoc:"CITY POINT",                      vanStaff:"USH,JOHNNY,LEO",     base:""},
+    {date:"26-03-2026",day:"Thursday", netil:"LEO",          vanLoc:"COWCROSS YARD",                   vanStaff:"HASSAN,JOHNNY",      base:""},
+    {date:"27-03-2026",day:"Friday",   netil:"IMI",          vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+    {date:"28-03-2026",day:"Saturday", netil:"AHMED",        vanLoc:"FRANCIS ROAD",                    vanStaff:"USH,ANES",           base:""},
+    {date:"29-03-2026",day:"Sunday",   netil:"AHMED",        vanLoc:"CATFORD",                         vanStaff:"USH,ANES",           base:""},
+  ]},
+  {week:"Wk2 – 30 Mar",days:[
+    {date:"30-03-2026",day:"Monday",   netil:"LEO",          vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+    {date:"31-03-2026",day:"Tuesday",  netil:"ANES",         vanLoc:"IMPERIAL",                        vanStaff:"IMI,LEO,JOHNNY",     base:""},
+    {date:"01-04-2026",day:"Wednesday",netil:"USH",          vanLoc:"COWCROSS",                        vanStaff:"JOHNNY,HASSAN",      base:""},
+    {date:"02-04-2026",day:"Thursday", netil:"ANES",         vanLoc:"",                                vanStaff:"",                   base:""},
+    {date:"03-04-2026",day:"Friday",   netil:"USH,IMI",      vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+    {date:"04-04-2026",day:"Saturday", netil:"AHMED,HASSAN", vanLoc:"THE KENSINGTON BOTANICAL MARKET", vanStaff:"GODFREY,LEO,USH",   base:""},
+    {date:"05-04-2026",day:"Sunday",   netil:"LEO",          vanLoc:"",                                vanStaff:"",                   base:""},
+  ]},
+  {week:"Wk3 – 6 Apr",days:[
+    {date:"06-04-2026",day:"Monday",   netil:"USH",          vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+    {date:"07-04-2026",day:"Tuesday",  netil:"LEO",          vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+    {date:"08-04-2026",day:"Wednesday",netil:"USH",          vanLoc:"COWCROSS",                        vanStaff:"HASSAN,JOHNNY",      base:""},
+    {date:"09-04-2026",day:"Thursday", netil:"BABIN",        vanLoc:"GHERKIN",                         vanStaff:"JOHNNY,ANES,LEO",    base:""},
+    {date:"10-04-2026",day:"Friday",   netil:"LEO,IMI",      vanLoc:"LONDON CITY ISLAND",              vanStaff:"JOHNNY,HASSAN",      base:"BABIN"},
+    {date:"11-04-2026",day:"Saturday", netil:"BABIN,LEO",    vanLoc:"LONDON CITY ISLAND",              vanStaff:"ANES,AHMED",         base:""},
+    {date:"12-04-2026",day:"Sunday",   netil:"AHMED",        vanLoc:"BECKENHAM",                       vanStaff:"USH,ANES",           base:""},
+  ]},
+  {week:"Wk4 – 13 Apr",days:[
+    {date:"13-04-2026",day:"Monday",   netil:"LEO",          vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+    {date:"14-04-2026",day:"Tuesday",  netil:"ANES",         vanLoc:"IMPERIAL",                        vanStaff:"LEO,IMI,JOHNNY",     base:""},
+    {date:"15-04-2026",day:"Wednesday",netil:"USH",          vanLoc:"COWCROSS",                        vanStaff:"GODFREY,JOHNNY",     base:""},
+    {date:"16-04-2026",day:"Thursday", netil:"LEO",          vanLoc:"",                                vanStaff:"",                   base:""},
+    {date:"17-04-2026",day:"Friday",   netil:"IMI,USH",      vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+    {date:"18-04-2026",day:"Saturday", netil:"BABIN,LEO",    vanLoc:"LONDON CITY ISLAND",              vanStaff:"JOHNNY,ANES",        base:""},
+    {date:"19-04-2026",day:"Sunday",   netil:"LEO",          vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+  ]},
+  {week:"Wk5 – 20 Apr",days:[
+    {date:"20-04-2026",day:"Monday",   netil:"BABIN",        vanLoc:"CITYPOINT",                       vanStaff:"JOHNNY,LEO,AHMED",   base:""},
+    {date:"21-04-2026",day:"Tuesday",  netil:"BABIN",        vanLoc:"IMPERIAL",                        vanStaff:"GODFREY,IMI,JOHNNY", base:""},
+    {date:"22-04-2026",day:"Wednesday",netil:"USH",          vanLoc:"",                                vanStaff:"",                   base:""},
+    {date:"23-04-2026",day:"Thursday", netil:"IMI",          vanLoc:"",                                vanStaff:"",                   base:""},
+    {date:"24-04-2026",day:"Friday",   netil:"USH,LEO",      vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+    {date:"25-04-2026",day:"Saturday", netil:"AHMED,BABIN",  vanLoc:"KENSINGTON VINTAGE FLEA MARKET",  vanStaff:"JOHNNY,USH,LEO",    base:""},
+    {date:"26-04-2026",day:"Sunday",   netil:"AHMED",        vanLoc:"CATFORD",                         vanStaff:"HASSAN,ANES",        base:""},
+  ]},
+  {week:"Wk6 – 27 Apr",days:[
+    {date:"27-04-2026",day:"Monday",   netil:"LEO",          vanLoc:"",                                vanStaff:"",                   base:"BABIN"},
+    {date:"28-04-2026",day:"Tuesday",  netil:"BABIN",        vanLoc:"IMPERIAL",                        vanStaff:"IMI,LEO,ANES,JOHNNY",base:""},
+    {date:"29-04-2026",day:"Wednesday",netil:"USH",          vanLoc:"",                                vanStaff:"",                   base:""},
+    {date:"30-04-2026",day:"Thursday", netil:"LEO",          vanLoc:"",                                vanStaff:"",                   base:""},
+    {date:"01-05-2026",day:"Friday",   netil:"HASSAN,USH",   vanLoc:"",                                vanStaff:"",                   base:""},
+    {date:"02-05-2026",day:"Saturday", netil:"AHMED,BABIN",  vanLoc:"",                                vanStaff:"",                   base:""},
+    {date:"03-05-2026",day:"Sunday",   netil:"AHMED",        vanLoc:"",                                vanStaff:"",                   base:""},
+  ]},
+];
+
+// ─── HELPERS ──────────────────────────────────
+function getS(n){return STAFF.find(s=>s.name.trim()===n.trim())||{color:"#94a3b8",role:""};}
+function chip(n){const c=getS(n).color;return `<span class="staff-chip" style="background:${c}22;color:${c};border:1px solid ${c}44">${n.trim()}</span>`;}
+function isWE(d){return d==="Saturday"||d==="Sunday";}
+function pn(s){return s?s.split(",").map(x=>x.trim()).filter(Boolean):[];}
+function buildShifts(){
+  const r=[];
+  ROTA.forEach(w=>w.days.forEach(d=>{
+    pn(d.netil).forEach(n=>r.push({staff:n,date:d.date,day:d.day,role:"NETIL",place:"Netil Market",week:w.week}));
+    if(d.vanLoc)pn(d.vanStaff).forEach(n=>r.push({staff:n,date:d.date,day:d.day,role:"VAN",place:d.vanLoc,week:w.week}));
+    pn(d.base).forEach(n=>r.push({staff:n,date:d.date,day:d.day,role:"BASE",place:"Base",week:w.week}));
+  }));
+  return r;
+}
+
+// ─── RENDER VIEW ──────────────────────────────
+function renderView(){
+  const c=document.getElementById("view-content");c.innerHTML="";
+  ROTA.forEach(week=>{
+    const blk=document.createElement("div");blk.className="week-block";
+    blk.innerHTML=`<div class="week-label">${week.week.toUpperCase()}</div>`;
+    const wrap=document.createElement("div");wrap.className="rota-table-wrap";
+    const tbl=document.createElement("table");tbl.className="rota-table";
+    const ROWS=[
+      {key:"date",label:"DATE"},{key:"day",label:"DAY"},{key:"place",label:"PLACE"},
+      {key:"netil",label:"NETIL (10:45am 5–6pm)"},{key:"vanLoc",label:"VAN LOCATION"},
+      {key:"vanStaff",label:"VAN STAFFS"},{key:"base",label:"BASE"},
+    ];
+    ROWS.forEach(row=>{
+      const tr=document.createElement("tr");
+      const lbl=document.createElement("td");lbl.className="row-label";lbl.textContent=row.label;tr.appendChild(lbl);
+      week.days.forEach(d=>{
+        const we=isWE(d.day);if(we)tr.classList.add("weekend");
+        const td=document.createElement("td");td.style.textAlign="center";
+        if(row.key==="date"){td.className="cell-date";td.textContent=d.date;}
+        else if(row.key==="day"){td.className="cell-day";td.textContent=d.day;}
+        else if(row.key==="place"){td.className="cell-place";td.textContent="STAFF";}
+        else if(row.key==="netil"){td.className="cell-netil";td.innerHTML=pn(d.netil).map(chip).join(" ")||"—";}
+        else if(row.key==="vanLoc"){td.className=d.vanLoc?"cell-van":"cell-empty";td.style.color="var(--blue)";td.textContent=d.vanLoc||"";}
+        else if(row.key==="vanStaff"){td.className="cell-staff-v";td.innerHTML=pn(d.vanStaff).map(chip).join(" ")||"";}
+        else if(row.key==="base"){td.className=d.base?"cell-base":"cell-empty";td.innerHTML=d.base?chip(d.base):"";}
+        tr.appendChild(td);
+      });
+      tbl.appendChild(tr);
+    });
+    wrap.appendChild(tbl);blk.appendChild(wrap);c.appendChild(blk);
+  });
+}
+
+// ─── FILTER ───────────────────────────────────
+function popFilterDropdowns(){
+  const names=[...new Set(buildShifts().map(r=>r.staff))].sort();
+  document.getElementById("f-staff").innerHTML=`<option value="">All Staff</option>`+names.map(n=>`<option>${n}</option>`).join("");
+  document.getElementById("f-week").innerHTML=`<option value="">All Weeks</option>`+ROTA.map(w=>`<option>${w.week}</option>`).join("");
+}
+function runFilter(){
+  const fS=document.getElementById("f-staff").value;
+  const fR=document.getElementById("f-role").value;
+  const fD=document.getElementById("f-day").value;
+  const fW=document.getElementById("f-week").value;
+  let rows=buildShifts();
+  if(fS)rows=rows.filter(r=>r.staff===fS);
+  if(fR)rows=rows.filter(r=>r.role===fR);
+  if(fD)rows=rows.filter(r=>r.day===fD);
+  if(fW)rows=rows.filter(r=>r.week===fW);
+  document.getElementById("filter-count").textContent=`${rows.length} shift${rows.length!==1?"s":""} found`;
+  const tb=document.getElementById("filter-body");tb.innerHTML="";
+  if(!rows.length){tb.innerHTML=`<tr><td colspan="6" class="no-results">😕 No shifts match the selected filters</td></tr>`;return;}
+  rows.forEach(r=>{
+    const we=isWE(r.day);
+    const rc=r.role==="NETIL"?"role-netil":r.role==="VAN"?"role-van":"role-base";
+    const tr=document.createElement("tr");if(we)tr.className="f-weekend";
+    tr.innerHTML=`<td>${chip(r.staff)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${r.date}</td>
+      <td style="color:${we?"var(--purple)":"var(--grey)"};font-weight:600">${r.day}</td>
+      <td><span class="role-badge ${rc}">${r.role}</span></td>
+      <td>${r.place}</td>
+      <td style="font-size:10px;color:var(--grey)">${r.week}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function clearFilter(){
+  ["f-staff","f-role","f-day","f-week"].forEach(id=>document.getElementById(id).value="");
+  runFilter();
+}
+
+// ─── STAFF PAGE ───────────────────────────────
+function renderStaff(){
+  const shifts=buildShifts();
+  const grid=document.getElementById("staff-grid");grid.innerHTML="";
+  STAFF.forEach(s=>{
+    const my=shifts.filter(r=>r.staff===s.name);
+    const nc=my.filter(r=>r.role==="NETIL").length;
+    const vc=my.filter(r=>r.role==="VAN").length;
+    const bc=my.filter(r=>r.role==="BASE").length;
+    const shown=my.slice(0,5),extra=my.length-5;
+    const card=document.createElement("div");card.className="staff-card";
+    card.innerHTML=`
+      <div class="staff-card-header" style="border-bottom:3px solid ${s.color}33">
+        <div class="staff-avatar" style="background:${s.color}">${s.name.slice(0,2)}</div>
+        <div><div class="staff-name-lg" style="color:${s.color}">${s.name}</div><div class="staff-role-tag">${s.role||"Staff"}</div></div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-family:'Bebas Neue',cursive;font-size:30px;color:${s.color};line-height:1">${my.length}</div>
+          <div style="font-size:9px;color:var(--grey);letter-spacing:1px">SHIFTS</div>
+        </div>
+      </div>
+      <div class="staff-stats">
+        <div class="stat-box"><div class="stat-num" style="color:var(--blue)">${nc}</div><div class="stat-lbl">Netil</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:var(--cyan)">${vc}</div><div class="stat-lbl">Van</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:var(--green)">${bc}</div><div class="stat-lbl">Base</div></div>
+      </div>
+      <div class="staff-shifts">
+        ${shown.map(r=>{const rc=r.role==="NETIL"?"role-netil":r.role==="VAN"?"role-van":"role-base";
+          return`<div class="shift-item"><span class="shift-date">${r.date} · ${r.day.slice(0,3)}</span><span class="role-badge ${rc}">${r.role}</span></div>`;}
+        ).join("")}
+        ${extra>0?`<div style="text-align:center;color:var(--amber);font-size:11px;font-weight:700;padding:6px 0">+${extra} more shifts</div>`:""}
+        ${my.length===0?`<div style="text-align:center;color:var(--grey);font-size:11px;padding:10px">No shifts scheduled</div>`:""}
+      </div>`;
+    grid.appendChild(card);
+  });
+  // Summary table
+  const t=document.getElementById("summary-table");
+  const wks=ROTA.map(w=>w.week);
+  t.innerHTML=`<thead><tr><th>STAFF</th>${wks.map(w=>`<th>${w.replace("Wk","WK ")}</th>`).join("")}<th>TOTAL</th></tr></thead>`;
+  const tb=document.createElement("tbody");
+  STAFF.forEach(s=>{
+    let tot=0;
+    const cells=wks.map(w=>{const n=shifts.filter(r=>r.staff===s.name&&r.week===w).length;tot+=n;return`<td class="${n>0?"":"zero-cell"}">${n||"—"}</td>`;});
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><span style="color:${s.color};font-weight:700">${s.name}</span></td>${cells.join("")}<td class="total-cell">${tot}</td>`;
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+}
+
+// ─── ADMIN – STAFF MANAGER ────────────────────
+function renderStaffManager(){
+  const wrap=document.getElementById("staff-tags");wrap.innerHTML="";
+  STAFF.forEach((s,i)=>{
+    const tag=document.createElement("div");tag.className="staff-tag-admin";
+    tag.style.cssText=`background:${s.color}22;color:${s.color};border:1px solid ${s.color}44`;
+    tag.innerHTML=`${s.name} <span class="staff-tag-remove" onclick="removeStaff(${i})">×</span>`;
+    wrap.appendChild(tag);
+  });
+  const cp=document.getElementById("color-picker");cp.innerHTML="";
+  PALETTE.forEach(c=>{
+    const sw=document.createElement("div");sw.className="color-swatch"+(c===selColor?" selected":"");
+    sw.style.background=c;sw.onclick=()=>{selColor=c;renderStaffManager();};cp.appendChild(sw);
+  });
+}
+function addStaff(){
+  const name=document.getElementById("new-name").value.trim().toUpperCase();
+  const role=document.getElementById("new-role").value.trim()||"Staff";
+  if(!name){showToast("⚠️ Enter a name");return;}
+  if(STAFF.find(s=>s.name===name)){showToast("⚠️ Already exists");return;}
+  STAFF.push({name,color:selColor,role});
+  document.getElementById("new-name").value="";
+  document.getElementById("new-role").value="";
+  renderStaffManager();popFilterDropdowns();renderStaff();
+  showToast(`✅ ${name} added`);
+}
+function removeStaff(i){
+  const n=STAFF[i].name;
+  if(!confirm(`Remove ${n}?`))return;
+  STAFF.splice(i,1);
+  renderStaffManager();popFilterDropdowns();renderStaff();
+  showToast(`🗑 ${n} removed`);
+}
+
+// ─── ADMIN – ROTA EDITOR ──────────────────────
+function renderAdmin(){
+  renderStaffManager();
+  const c=document.getElementById("admin-content");c.innerHTML="";
+  ROTA.forEach((week,wi)=>{
+    const blk=document.createElement("div");blk.className="week-block";
+    blk.innerHTML=`<div class="week-label">${week.week.toUpperCase()}</div>`;
+    const tw=document.createElement("div");tw.className="edit-table-wrap";
+    const tbl=document.createElement("table");tbl.className="edit-table";
+    tbl.innerHTML=`<thead><tr><th>DATE</th><th>DAY</th><th>NETIL STAFF</th><th>VAN LOCATION</th><th>VAN STAFFS</th><th>BASE</th></tr></thead>`;
+    const tb=document.createElement("tbody");
+    week.days.forEach((d,di)=>{
+      const tr=document.createElement("tr");if(isWE(d.day))tr.className="weekend-row";
+      tr.innerHTML=`<td class="cell-date-admin">${d.date}</td><td class="cell-day-admin">${d.day}</td>`;
+      ["netil","vanLoc","vanStaff","base"].forEach(f=>{
+        const td=document.createElement("td");
+        const inp=document.createElement("input");inp.type="text";inp.className="editable";
+        inp.value=d[f]||"";
+        inp.placeholder=f==="vanLoc"?"Location or blank":f==="base"?"Staff name":"Names, comma-separated";
+        inp.addEventListener("input",()=>markUnsaved());
+        inp.addEventListener("change",()=>{ROTA[wi].days[di][f]=inp.value.trim();refreshAll();});
+        td.appendChild(inp);tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);tw.appendChild(tbl);blk.appendChild(tw);c.appendChild(blk);
+  });
+}
+function markUnsaved(){document.getElementById("save-bar").style.display="flex";}
+function saveChanges(){
+  let row=0;
+  ROTA.forEach((w,wi)=>w.days.forEach((d,di)=>{
+    const trs=document.querySelectorAll("#admin-content .edit-table tbody tr");
+    if(trs[row]){
+      const inp=trs[row].querySelectorAll("input");
+      if(inp.length===4){ROTA[wi].days[di].netil=inp[0].value.trim();ROTA[wi].days[di].vanLoc=inp[1].value.trim();ROTA[wi].days[di].vanStaff=inp[2].value.trim();ROTA[wi].days[di].base=inp[3].value.trim();}
+    }
+    row++;
+  }));
+  refreshAll();
+  document.getElementById("save-bar").style.display="none";
+  // Push to Firebase so all viewers update live
+  if(typeof window.saveRotaToFirebase==="function") window.saveRotaToFirebase();
+  showToast("✅ Saved! All viewers updated live.");
+}
+function refreshAll(){renderView();runFilter();renderStaff();popFilterDropdowns();}
+window.refreshAll = refreshAll;
+window.ROTA = ROTA;
+window.STAFF = STAFF;
+
+// ─── PASSWORD ─────────────────────────────────
+let adminOn=false;
+function checkPassword(){
+  const inp=document.getElementById("pw-input");
+  const val=inp.value;
+  document.getElementById("pin-error").style.display="none";
+  if(val===ADMIN_PIN){
+    adminOn=true;inp.value="";
+    renderAdmin();_switch("admin");_tabs("admin-gate");
+  } else {
+    document.getElementById("pin-error").style.display="block";
+    inp.value="";inp.focus();
+  }
+}
+
+function adminLogout(){adminOn=false;_switch("view");_tabs("view");showToast("🔒 Admin locked");}
+
+// ─── NAVIGATION ───────────────────────────────
+const PAGEIDS=["view","filter","staff","admin-gate"];
+function showPage(p){
+  if(p==="admin-gate"&&adminOn){_switch("admin");_tabs("admin-gate");return;}
+  if(p==="filter"){popFilterDropdowns();runFilter();}
+  if(p==="staff")renderStaff();
+  _switch(p);_tabs(p);
+}
+function _switch(p){document.querySelectorAll(".page").forEach(el=>el.classList.remove("active"));document.getElementById("page-"+p).classList.add("active");}
+function _tabs(p){document.querySelectorAll(".nav-tab").forEach((t,i)=>t.classList.toggle("active",PAGEIDS[i]===p||(p==="admin"&&PAGEIDS[i]==="admin-gate")));}
+
+// ─── TOAST ────────────────────────────────────
+function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000);}
+
+// ─── INIT ─────────────────────────────────────
+renderView();
+popFilterDropdowns();
+runFilter();
+// Seed Firebase with default data if it's the first time
+setTimeout(()=>{
+  if(typeof window.saveRotaToFirebase==="function"){
+    // Only seed if Firebase hasn't loaded data yet (database was null/empty)
+    if(!window._firebaseLoaded) window.saveRotaToFirebase();
+  }
+}, 2000);
+</script>
+</body>
+</html>
