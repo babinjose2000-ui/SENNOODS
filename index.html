@@ -316,6 +316,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
       <div class="filter-label">Week</div>
       <select class="filter-select" id="f-week" onchange="runFilter()"><option value="">All Weeks</option></select>
     </div>
+    <div class="filter-group">
+      <div class="filter-label">Date From</div>
+      <input type="date" class="filter-select" id="f-date-from" onchange="runFilter()" style="min-width:140px;"/>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Date To</div>
+      <input type="date" class="filter-select" id="f-date-to" onchange="runFilter()" style="min-width:140px;"/>
+    </div>
     <button class="btn btn-grey" onclick="clearFilter()">✕ Clear</button>
   </div>
   <div class="results-count" id="filter-count"></div>
@@ -331,6 +339,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 <div id="page-staff" class="page">
   <div class="page-header">
     <div><div class="page-title">👥 Staff Overview</div><div class="page-sub">Shift counts &amp; schedule per person</div></div>
+    <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">
+      <div class="filter-group">
+        <div class="filter-label">Period From</div>
+        <input type="date" class="filter-select" id="staff-date-from" onchange="renderStaff()" style="min-width:140px;"/>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Period To</div>
+        <input type="date" class="filter-select" id="staff-date-to" onchange="renderStaff()" style="min-width:140px;"/>
+      </div>
+      <button class="btn btn-grey" onclick="resetStaffPeriod()">↺ This Month</button>
+    </div>
   </div>
   <div class="staff-grid" id="staff-grid"></div>
   <div class="page-title" style="font-size:18px;margin-bottom:10px;">📊 Shift Summary Table</div>
@@ -490,6 +509,51 @@ let selColor=PALETTE[0];
 
 // ─── ROTA DATA ────────────────────────────────
 let ROTA = [
+  {week:"Wk – 23 Mar",days:[
+    {date:"23-03-2026",day:"Monday",    netil:"USH",          vanLoc:"",                                    vanStaff:"",                    base:"MELISSA"},
+    {date:"24-03-2026",day:"Tuesday",   netil:"",             vanLoc:"IMPERIAL",                            vanStaff:"IMI,LEO,ANES,JOHNNY", base:"BABIN"},
+    {date:"25-03-2026",day:"Wednesday", netil:"ANES",         vanLoc:"",                                    vanStaff:"USH,JOHNNY,LEO",      base:""},
+    {date:"26-03-2026",day:"Thursday",  netil:"LEO",          vanLoc:"CITY POINT",                          vanStaff:"HASSAN,JOHNNY",       base:""},
+    {date:"27-03-2026",day:"Friday",    netil:"IMI",          vanLoc:"",                                    vanStaff:"",                    base:"BABIN"},
+    {date:"28-03-2026",day:"Saturday",  netil:"AHMED",        vanLoc:"FRANCIS ROAD",                        vanStaff:"USH,ANES",            base:""},
+    {date:"29-03-2026",day:"Sunday",    netil:"AHMED",        vanLoc:"CATFORD",                             vanStaff:"USH,ANES",            base:""},
+  ]},
+  {week:"Wk – 30 Mar",days:[
+    {date:"30-03-2026",day:"Monday",    netil:"LEO",          vanLoc:"",                                    vanStaff:"",                    base:"BABIN"},
+    {date:"31-03-2026",day:"Tuesday",   netil:"",             vanLoc:"IMPERIAL",                            vanStaff:"IMI,LEO,JOHNNY",      base:""},
+    {date:"01-04-2026",day:"Wednesday", netil:"ANES",         vanLoc:"COWCROSS",                            vanStaff:"JOHNNY,HASSAN",       base:""},
+    {date:"02-04-2026",day:"Thursday",  netil:"ANES",         vanLoc:"",                                    vanStaff:"",                    base:"BABIN"},
+    {date:"03-04-2026",day:"Friday",    netil:"USH,IMI",      vanLoc:"",                                    vanStaff:"",                    base:""},
+    {date:"04-04-2026",day:"Saturday",  netil:"AHMED,HASSAN", vanLoc:"THE KENSINGTON BOTANICAL MARKET",     vanStaff:"GODFREY,LEO,USH",     base:""},
+    {date:"05-04-2026",day:"Sunday",    netil:"LEO",          vanLoc:"",                                    vanStaff:"",                    base:""},
+  ]},
+  {week:"Wk – 6 Apr",days:[
+    {date:"06-04-2026",day:"Monday",    netil:"USH",          vanLoc:"",                                    vanStaff:"",                    base:"BABIN"},
+    {date:"07-04-2026",day:"Tuesday",   netil:"LEO",          vanLoc:"",                                    vanStaff:"",                    base:"BABIN"},
+    {date:"08-04-2026",day:"Wednesday", netil:"USH",          vanLoc:"COWCROSS",                            vanStaff:"HASSAN,JOHNNY",       base:""},
+    {date:"09-04-2026",day:"Thursday",  netil:"BABIN",        vanLoc:"GHERKIN",                             vanStaff:"JOHNNY,ANES,LEO",     base:""},
+    {date:"10-04-2026",day:"Friday",    netil:"LEO,IMI",      vanLoc:"LONDON CITY ISLAND",                  vanStaff:"JOHNNY,HASSAN",       base:"BABIN"},
+    {date:"11-04-2026",day:"Saturday",  netil:"BABIN,LEO",    vanLoc:"LONDON CITY ISLAND",                  vanStaff:"ANES,AHMED",          base:""},
+    {date:"12-04-2026",day:"Sunday",    netil:"AHMED",        vanLoc:"BECKENHAM",                           vanStaff:"USH,ANES",            base:""},
+  ]},
+  {week:"Wk – 13 Apr",days:[
+    {date:"13-04-2026",day:"Monday",    netil:"LEO",          vanLoc:"",                                    vanStaff:"",                    base:"BABIN"},
+    {date:"14-04-2026",day:"Tuesday",   netil:"ANES",         vanLoc:"IMPERIAL",                            vanStaff:"LEO,IMI,JOHNNY",      base:""},
+    {date:"15-04-2026",day:"Wednesday", netil:"ANES",         vanLoc:"COWCROSS",                            vanStaff:"GODFREY,JOHNNY",      base:""},
+    {date:"16-04-2026",day:"Thursday",  netil:"LEO",          vanLoc:"",                                    vanStaff:"",                    base:"BABIN"},
+    {date:"17-04-2026",day:"Friday",    netil:"",             vanLoc:"",                                    vanStaff:"",                    base:""},
+    {date:"18-04-2026",day:"Saturday",  netil:"IMI,USH",      vanLoc:"LONDON CITY ISLAND",                  vanStaff:"JOHNNY,ANES",         base:""},
+    {date:"19-04-2026",day:"Sunday",    netil:"LEO",          vanLoc:"",                                    vanStaff:"",                    base:"BABIN"},
+  ]},
+  {week:"Wk – 20 Apr",days:[
+    {date:"20-04-2026",day:"Monday",    netil:"BABIN",        vanLoc:"CITYPOINT",                           vanStaff:"JOHNNY,LEO,AHMED",    base:""},
+    {date:"21-04-2026",day:"Tuesday",   netil:"BABIN",        vanLoc:"IMPERIAL",                            vanStaff:"GODFREY,IMI,JOHNNY",  base:""},
+    {date:"22-04-2026",day:"Wednesday", netil:"USH",          vanLoc:"",                                    vanStaff:"",                    base:""},
+    {date:"23-04-2026",day:"Thursday",  netil:"IMI",          vanLoc:"",                                    vanStaff:"",                    base:""},
+    {date:"24-04-2026",day:"Friday",    netil:"USH,LEO",      vanLoc:"",                                    vanStaff:"",                    base:""},
+    {date:"25-04-2026",day:"Saturday",  netil:"AHMED,BABIN",  vanLoc:"THE BIG KENSINGTON VINTAGE FLEA MARKET",vanStaff:"JOHNNY,USH,LEO",   base:""},
+    {date:"26-04-2026",day:"Sunday",    netil:"AHMED",        vanLoc:"CATFORD",                             vanStaff:"HASSAN,ANES",         base:"BABIN"},
+  ]},
   {week:"Wk1 – 27 Apr",days:[
     {date:"27-04-2026",day:"Monday",    netil:"LEO",         vanLoc:"",                         vanStaff:"",                              base:"BABIN"},
     {date:"28-04-2026",day:"Tuesday",   netil:"USH",         vanLoc:"IMPERIAL",                 vanStaff:"IMI,LEO,JOHNNY,ANES",           base:"BABIN"},
@@ -661,16 +725,34 @@ function popFilterDropdowns(){
   document.getElementById("f-staff").innerHTML=`<option value="">All Staff</option>`+names.map(n=>`<option>${n}</option>`).join("");
   document.getElementById("f-week").innerHTML=`<option value="">All Weeks</option>`+ROTA.map(w=>`<option>${w.week}</option>`).join("");
 }
+function setFilterCurrentMonth(){
+  const now=new Date();
+  const y=now.getFullYear(),m=now.getMonth();
+  const from=new Date(y,m,1),to=new Date(y,m+1,0);
+  const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  document.getElementById("f-date-from").value=fmt(from);
+  document.getElementById("f-date-to").value=fmt(to);
+}
 function runFilter(){
   const fS=document.getElementById("f-staff").value;
   const fR=document.getElementById("f-role").value;
   const fD=document.getElementById("f-day").value;
   const fW=document.getElementById("f-week").value;
+  const fFrom=document.getElementById("f-date-from").value;
+  const fTo=document.getElementById("f-date-to").value;
   let rows=buildShifts();
   if(fS)rows=rows.filter(r=>r.staff===fS);
   if(fR)rows=rows.filter(r=>r.role===fR);
   if(fD)rows=rows.filter(r=>r.day===fD);
   if(fW)rows=rows.filter(r=>r.week===fW);
+  if(fFrom||fTo){
+    rows=rows.filter(r=>{
+      const d=parseDate(r.date);
+      if(fFrom&&d<new Date(fFrom))return false;
+      if(fTo&&d>new Date(fTo))return false;
+      return true;
+    });
+  }
   document.getElementById("filter-count").textContent=`${rows.length} shift${rows.length!==1?"s":""} found`;
   const tb=document.getElementById("filter-body");tb.innerHTML="";
   if(!rows.length){tb.innerHTML=`<tr><td colspan="6" class="no-results">😕 No shifts match the selected filters</td></tr>`;return;}
@@ -688,13 +770,39 @@ function runFilter(){
   });
 }
 function clearFilter(){
-  ["f-staff","f-role","f-day","f-week"].forEach(id=>document.getElementById(id).value="");
+  ["f-staff","f-role","f-day","f-week","f-date-from","f-date-to"].forEach(id=>document.getElementById(id).value="");
+  setFilterCurrentMonth();
   runFilter();
 }
 
 // ─── STAFF PAGE ───────────────────────────────
+function setStaffCurrentMonth(){
+  const now=new Date();
+  const y=now.getFullYear(),m=now.getMonth();
+  const from=new Date(y,m,1),to=new Date(y,m+1,0);
+  const fmt=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  document.getElementById("staff-date-from").value=fmt(from);
+  document.getElementById("staff-date-to").value=fmt(to);
+}
+function resetStaffPeriod(){
+  setStaffCurrentMonth();
+  renderStaff();
+}
 function renderStaff(){
-  const shifts=buildShifts();
+  const fFrom=document.getElementById("staff-date-from").value;
+  const fTo=document.getElementById("staff-date-to").value;
+  let allShifts=buildShifts();
+  // Filter by date period
+  const shifts=allShifts.filter(r=>{
+    const d=parseDate(r.date);
+    if(fFrom&&d<new Date(fFrom))return false;
+    if(fTo&&d>new Date(fTo))return false;
+    return true;
+  });
+  // Period label for sub-header
+  const periodLabel=(fFrom||fTo)?`${fFrom||"…"} → ${fTo||"…"}`:"All time";
+  document.querySelector("#page-staff .page-sub").textContent=`Showing: ${periodLabel}`;
+
   const grid=document.getElementById("staff-grid");grid.innerHTML="";
   STAFF.forEach(s=>{
     const my=shifts.filter(r=>r.staff===s.name);
@@ -726,9 +834,15 @@ function renderStaff(){
       </div>`;
     grid.appendChild(card);
   });
-  // Summary table
+  // Summary table — only show weeks with days in the period
   const t=document.getElementById("summary-table");
-  const wks=ROTA.map(w=>w.week);
+  const filteredWeeks=ROTA.filter(w=>w.days.some(d=>{
+    const dt=parseDate(d.date);
+    if(fFrom&&dt<new Date(fFrom))return false;
+    if(fTo&&dt>new Date(fTo))return false;
+    return true;
+  }));
+  const wks=filteredWeeks.map(w=>w.week);
   t.innerHTML=`<thead><tr><th>STAFF</th>${wks.map(w=>`<th>${w.replace("Wk","WK ")}</th>`).join("")}<th>TOTAL</th></tr></thead>`;
   const tb=document.createElement("tbody");
   STAFF.forEach(s=>{
@@ -1011,7 +1125,9 @@ function showToast(msg){const t=document.getElementById("toast");t.textContent=m
 // ─── INIT ─────────────────────────────────────
 renderView();
 popFilterDropdowns();
+setFilterCurrentMonth();
 runFilter();
+setStaffCurrentMonth();
 </script>
 </body>
 </html>
