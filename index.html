@@ -13,34 +13,27 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  let rotaLoaded = false, staffLoaded = false;
-
-  function tryRefresh() {
-    if (rotaLoaded && staffLoaded && typeof window.refreshAll === "function") {
-      // Replace the actual JS arrays used by the app
-      ROTA.length = 0;
-      window._fbRota.forEach(r => ROTA.push(r));
-      STAFF.length = 0;
-      window._fbStaff.forEach(s => STAFF.push(s));
-      window.refreshAll();
-    }
+  function toArray(val){
+    if(!val) return null;
+    if(Array.isArray(val)) return val.filter(Boolean);
+    return Object.values(val).filter(Boolean);
   }
 
   onValue(ref(db, "rota"), (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      window._fbRota = Array.isArray(data) ? data : Object.values(data);
-      rotaLoaded = true;
-      tryRefresh();
+    const data = toArray(snapshot.val());
+    if(data && data.length){
+      ROTA.length = 0;
+      data.forEach(r => ROTA.push(r));
+      if(typeof window.refreshAll === "function") window.refreshAll();
     }
   });
 
   onValue(ref(db, "staff"), (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      window._fbStaff = Array.isArray(data) ? data : Object.values(data);
-      staffLoaded = true;
-      tryRefresh();
+    const data = toArray(snapshot.val());
+    if(data && data.length){
+      STAFF.length = 0;
+      data.forEach(s => STAFF.push(s));
+      if(typeof window.refreshAll === "function") window.refreshAll();
     }
   });
 
@@ -639,6 +632,7 @@ function addStaff(){
   document.getElementById("new-name").value="";
   document.getElementById("new-role").value="";
   renderStaffManager();popFilterDropdowns();renderStaff();
+  if(typeof window.saveRotaToFirebase==="function") window.saveRotaToFirebase();
   showToast(`✅ ${name} added`);
 }
 function removeStaff(i){
@@ -646,6 +640,7 @@ function removeStaff(i){
   if(!confirm(`Remove ${n}?`))return;
   STAFF.splice(i,1);
   renderStaffManager();popFilterDropdowns();renderStaff();
+  if(typeof window.saveRotaToFirebase==="function") window.saveRotaToFirebase();
   showToast(`🗑 ${n} removed`);
 }
 
