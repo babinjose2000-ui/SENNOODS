@@ -230,8 +230,46 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     <button class="nav-tab" onclick="showPage('staff')">👥 Staff</button>
     <button class="nav-tab" onclick="showPage('past')">📁 Past Rota</button>
     <button class="nav-tab" onclick="showPage('admin-gate')">🔐 Admin</button>
+    <button class="nav-tab" onclick="showHelp()" style="color:#94a3b8;">❓</button>
   </div>
 </nav>
+
+<!-- ══ HELP MODAL ══ -->
+<div id="help-overlay" onclick="hideHelp()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;"></div>
+<div id="help-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:white;border-radius:16px;padding:28px 24px;width:min(420px,92vw);box-shadow:0 12px 48px rgba(0,0,0,.25);max-height:85vh;overflow-y:auto;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+    <div style="font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:2px;color:#1e293b;">🍜 How To Use</div>
+    <button onclick="hideHelp()" style="border:none;background:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;">×</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px;font-size:13px;color:#1a1612;">
+
+    <div style="background:#dce8ff;border-radius:10px;padding:12px 14px;">
+      <div style="font-weight:700;color:#1e4fd4;margin-bottom:4px;">📅 Rota</div>
+      Your weekly schedule. Shows the current week and upcoming weeks. Check here to see where you're working and when.
+    </div>
+
+    <div style="background:#cffafe;border-radius:10px;padding:12px 14px;">
+      <div style="font-weight:700;color:#0891b2;margin-bottom:4px;">🔍 Filter</div>
+      Search for your own shifts. Pick your name from the dropdown to see all your upcoming dates, roles and locations in one list.
+    </div>
+
+    <div style="background:#dcfce7;border-radius:10px;padding:12px 14px;">
+      <div style="font-weight:700;color:#15803d;margin-bottom:4px;">👥 Staff</div>
+      See shift counts for the whole team. Shows how many Netil, Van and Base shifts each person has.
+    </div>
+
+    <div style="background:#f3f0ea;border-radius:10px;padding:12px 14px;">
+      <div style="font-weight:700;color:#475569;margin-bottom:4px;">📁 Past Rota</div>
+      Archive of completed weeks. Useful if you need to check a previous shift date or location.
+    </div>
+
+    <div style="background:#fdf3dc;border-radius:10px;padding:12px 14px;font-size:11px;color:#92400e;">
+      <strong>🔵 Netil</strong> = Netil Market &nbsp;|&nbsp; <strong>🩵 Van</strong> = Van location shown &nbsp;|&nbsp; <strong>🟢 Base</strong> = Base kitchen
+    </div>
+
+    <div style="text-align:center;font-size:11px;color:#94a3b8;margin-top:4px;">Contact your manager if you have any questions about your shifts.</div>
+  </div>
+</div>
 
 <!-- ══ VIEW ══ -->
 <div id="page-view" class="page active">
@@ -920,18 +958,26 @@ function clearPastRota(){
 }
 function markUnsaved(){document.getElementById("save-bar").style.display="flex";}
 function saveChanges(){
+  const editableWeeks=ROTA.filter(w=>getWeekStatus(w)==="current"||getWeekStatus(w)==="future");
   let row=0;
-  ROTA.forEach((w,wi)=>w.days.forEach((d,di)=>{
-    const trs=document.querySelectorAll("#admin-content .edit-table tbody tr");
-    if(trs[row]){
-      const inp=trs[row].querySelectorAll("input");
-      if(inp.length===4){ROTA[wi].days[di].netil=inp[0].value.trim();ROTA[wi].days[di].vanLoc=inp[1].value.trim();ROTA[wi].days[di].vanStaff=inp[2].value.trim();ROTA[wi].days[di].base=inp[3].value.trim();}
-    }
-    row++;
-  }));
+  editableWeeks.forEach((week)=>{
+    const wi=ROTA.indexOf(week);
+    week.days.forEach((d,di)=>{
+      const trs=document.querySelectorAll("#admin-content .edit-table tbody tr");
+      if(trs[row]){
+        const inp=trs[row].querySelectorAll("input");
+        if(inp.length===4){
+          ROTA[wi].days[di].netil=inp[0].value.trim();
+          ROTA[wi].days[di].vanLoc=inp[1].value.trim();
+          ROTA[wi].days[di].vanStaff=inp[2].value.trim();
+          ROTA[wi].days[di].base=inp[3].value.trim();
+        }
+      }
+      row++;
+    });
+  });
   refreshAll();
   document.getElementById("save-bar").style.display="none";
-  // Push to Firebase so all viewers update live
   if(typeof window.saveRotaToFirebase==="function") window.saveRotaToFirebase();
   showToast("✅ Saved! All viewers updated live.");
 }
@@ -954,6 +1000,10 @@ function showPage(p){
 }
 function _switch(p){document.querySelectorAll(".page").forEach(el=>el.classList.remove("active"));document.getElementById("page-"+p).classList.add("active");}
 function _tabs(p){document.querySelectorAll(".nav-tab").forEach((t,i)=>t.classList.toggle("active",PAGEIDS[i]===p||(p==="admin"&&PAGEIDS[i]==="admin-gate")));}
+
+// ─── HELP ─────────────────────────────────────
+function showHelp(){document.getElementById("help-overlay").style.display="block";document.getElementById("help-modal").style.display="block";}
+function hideHelp(){document.getElementById("help-overlay").style.display="none";document.getElementById("help-modal").style.display="none";}
 
 // ─── TOAST ────────────────────────────────────
 function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000);}
