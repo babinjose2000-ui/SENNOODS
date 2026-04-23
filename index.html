@@ -196,6 +196,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .toast{position:fixed;bottom:24px;right:24px;background:var(--header);color:white;padding:12px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;}
 .toast.show{transform:translateY(0);opacity:1;}
 @media(max-width:640px){.nav{padding:0 10px;}.nav-brand .sub{display:none;}.nav-tab{padding:5px 7px;font-size:10px;}.page{padding:12px 8px;}.staff-grid{grid-template-columns:1fr;}.lock-card{width:300px;padding:28px 20px;}}
+/* PAST ROTA */
+.past-week-block{margin-bottom:22px;}
+.past-week-label{background:#64748b;color:white;font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:2px;padding:5px 14px;border-radius:6px 6px 0 0;display:inline-block;}
+/* PDF PRINT */
+@media print{
+  .nav,.btn,.page-header button{display:none!important;}
+  .page{display:block!important;padding:10px;}
+  body{background:white;}
+  .past-week-label{background:#333!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .cell-date,.cell-day,.cell-place{background:#1e3a5f!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .cell-netil{background:#dce8ff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .cell-van{background:#cffafe!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .cell-base{background:#dcfce7!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .week-block,.past-week-block{page-break-inside:avoid;}
+}
 </style>
 </head>
 <body>
@@ -209,6 +224,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     <button class="nav-tab active" onclick="showPage('view')">📅 Rota</button>
     <button class="nav-tab" onclick="showPage('filter')">🔍 Filter</button>
     <button class="nav-tab" onclick="showPage('staff')">👥 Staff</button>
+    <button class="nav-tab" onclick="showPage('past')">📁 Past Rota</button>
     <button class="nav-tab" onclick="showPage('admin-gate')">🔐 Admin</button>
   </div>
 </nav>
@@ -279,7 +295,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
   <div class="summary-wrap"><table class="summary-table" id="summary-table"></table></div>
 </div>
 
-<!-- ══ ADMIN GATE ══ -->
+<!-- ══ PAST ROTA ══ -->
+<div id="page-past" class="page">
+  <div class="page-header">
+    <div><div class="page-title">📁 Past Rota</div><div class="page-sub">Previous weeks · Last 4 months</div></div>
+    <button class="btn btn-amber" onclick="downloadPastPDF()" style="display:flex;align-items:center;gap:6px;">⬇️ Download PDF</button>
+  </div>
+  <div id="past-empty" style="display:none;padding:60px 20px;text-align:center;color:var(--grey);font-size:14px;">📭 No past weeks yet — completed weeks will appear here automatically.</div>
+  <div id="past-content"></div>
+</div>
 <div id="page-admin-gate" class="page">
   <div class="lock-screen">
     <div class="lock-card">
@@ -423,38 +447,86 @@ function buildShifts(){
   return r;
 }
 
+// ─── DATE HELPERS ─────────────────────────────
+function parseDate(str){
+  // format: DD-MM-YYYY
+  const [d,m,y]=str.split("-");return new Date(y,m-1,d);
+}
+function getWeekStatus(week){
+  const today=new Date();today.setHours(0,0,0,0);
+  // A week is "past" if ALL its days are before today
+  const allDates=week.days.map(d=>parseDate(d.date));
+  const latest=new Date(Math.max(...allDates));
+  const earliest=new Date(Math.min(...allDates));
+  // 4 months cutoff
+  const cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-4);
+  if(latest<today) return latest>=cutoff?"past":"old";
+  if(earliest<=today) return "current";
+  return "future";
+}
+
 // ─── RENDER VIEW ──────────────────────────────
 function renderView(){
   const c=document.getElementById("view-content");c.innerHTML="";
-  ROTA.forEach(week=>{
-    const blk=document.createElement("div");blk.className="week-block";
-    blk.innerHTML=`<div class="week-label">${week.week.toUpperCase()}</div>`;
-    const wrap=document.createElement("div");wrap.className="rota-table-wrap";
-    const tbl=document.createElement("table");tbl.className="rota-table";
-    const ROWS=[
-      {key:"date",label:"DATE"},{key:"day",label:"DAY"},{key:"place",label:"PLACE"},
-      {key:"netil",label:"NETIL (10:45am 5–6pm)"},{key:"vanLoc",label:"VAN LOCATION"},
-      {key:"vanStaff",label:"VAN STAFFS"},{key:"base",label:"BASE"},
-    ];
-    ROWS.forEach(row=>{
-      const tr=document.createElement("tr");
-      const lbl=document.createElement("td");lbl.className="row-label";lbl.textContent=row.label;tr.appendChild(lbl);
-      week.days.forEach(d=>{
-        const we=isWE(d.day);if(we)tr.classList.add("weekend");
-        const td=document.createElement("td");td.style.textAlign="center";
-        if(row.key==="date"){td.className="cell-date";td.textContent=d.date;}
-        else if(row.key==="day"){td.className="cell-day";td.textContent=d.day;}
-        else if(row.key==="place"){td.className="cell-place";td.textContent="STAFF";}
-        else if(row.key==="netil"){td.className="cell-netil";td.innerHTML=pn(d.netil).map(chip).join(" ")||"—";}
-        else if(row.key==="vanLoc"){td.className=d.vanLoc?"cell-van":"cell-empty";td.style.color="var(--blue)";td.textContent=d.vanLoc||"";}
-        else if(row.key==="vanStaff"){td.className="cell-staff-v";td.innerHTML=pn(d.vanStaff).map(chip).join(" ")||"";}
-        else if(row.key==="base"){td.className=d.base?"cell-base":"cell-empty";td.innerHTML=d.base?chip(d.base):"";}
-        tr.appendChild(td);
-      });
-      tbl.appendChild(tr);
+  const weeks=ROTA.filter(w=>getWeekStatus(w)==="current"||getWeekStatus(w)==="future");
+  if(!weeks.length){c.innerHTML=`<div style="padding:60px 20px;text-align:center;color:var(--grey);font-size:14px;">📭 No current or upcoming weeks. Add new weeks in Admin.</div>`;return;}
+  weeks.forEach(week=>renderWeekBlock(week,c,"week-label"));
+}
+
+function renderWeekBlock(week,container,labelClass){
+  const blk=document.createElement("div");blk.className="week-block";
+  blk.innerHTML=`<div class="${labelClass}">${week.week.toUpperCase()}</div>`;
+  const wrap=document.createElement("div");wrap.className="rota-table-wrap";
+  const tbl=document.createElement("table");tbl.className="rota-table";
+  const ROWS=[
+    {key:"date",label:"DATE"},{key:"day",label:"DAY"},{key:"place",label:"PLACE"},
+    {key:"netil",label:"NETIL (10:45am 5–6pm)"},{key:"vanLoc",label:"VAN LOCATION"},
+    {key:"vanStaff",label:"VAN STAFFS"},{key:"base",label:"BASE"},
+  ];
+  ROWS.forEach(row=>{
+    const tr=document.createElement("tr");
+    const lbl=document.createElement("td");lbl.className="row-label";lbl.textContent=row.label;tr.appendChild(lbl);
+    week.days.forEach(d=>{
+      const we=isWE(d.day);if(we)tr.classList.add("weekend");
+      const td=document.createElement("td");td.style.textAlign="center";
+      if(row.key==="date"){td.className="cell-date";td.textContent=d.date;}
+      else if(row.key==="day"){td.className="cell-day";td.textContent=d.day;}
+      else if(row.key==="place"){td.className="cell-place";td.textContent="STAFF";}
+      else if(row.key==="netil"){td.className="cell-netil";td.innerHTML=pn(d.netil).map(chip).join(" ")||"—";}
+      else if(row.key==="vanLoc"){td.className=d.vanLoc?"cell-van":"cell-empty";td.style.color="var(--blue)";td.textContent=d.vanLoc||"";}
+      else if(row.key==="vanStaff"){td.className="cell-staff-v";td.innerHTML=pn(d.vanStaff).map(chip).join(" ")||"";}
+      else if(row.key==="base"){td.className=d.base?"cell-base":"cell-empty";td.innerHTML=d.base?chip(d.base):"";}
+      tr.appendChild(td);
     });
-    wrap.appendChild(tbl);blk.appendChild(wrap);c.appendChild(blk);
+    tbl.appendChild(tr);
   });
+  wrap.appendChild(tbl);blk.appendChild(wrap);container.appendChild(blk);
+}
+
+// ─── RENDER PAST ──────────────────────────────
+function renderPast(){
+  const c=document.getElementById("past-content");c.innerHTML="";
+  const weeks=ROTA.filter(w=>getWeekStatus(w)==="past");
+  const empty=document.getElementById("past-empty");
+  if(!weeks.length){empty.style.display="block";return;}
+  empty.style.display="none";
+  // Show most recent first
+  [...weeks].reverse().forEach(week=>renderWeekBlock(week,c,"past-week-label"));
+}
+
+// ─── DOWNLOAD PAST AS PDF ─────────────────────
+function downloadPastPDF(){
+  // Show only past page and print
+  document.querySelectorAll(".page").forEach(p=>p.style.display="none");
+  const pastPage=document.getElementById("page-past");
+  pastPage.style.display="block";
+  window.print();
+  // Restore after print dialog closes
+  setTimeout(()=>{
+    document.querySelectorAll(".page").forEach(p=>p.style.display="");
+    document.querySelectorAll(".page.active").forEach(p=>p.style.display="block");
+    refreshAll();
+  },500);
 }
 
 // ─── FILTER ───────────────────────────────────
@@ -622,7 +694,7 @@ function saveChanges(){
   if(typeof window.saveRotaToFirebase==="function") window.saveRotaToFirebase();
   showToast("✅ Saved! All viewers updated live.");
 }
-function refreshAll(){renderView();runFilter();renderStaff();popFilterDropdowns();}
+function refreshAll(){renderView();renderPast();runFilter();renderStaff();popFilterDropdowns();}
 window.refreshAll = refreshAll;
 
 // ─── PASSWORD ─────────────────────────────────
@@ -643,11 +715,12 @@ function checkPassword(){
 function adminLogout(){adminOn=false;_switch("view");_tabs("view");showToast("🔒 Admin locked");}
 
 // ─── NAVIGATION ───────────────────────────────
-const PAGEIDS=["view","filter","staff","admin-gate"];
+const PAGEIDS=["view","filter","staff","past","admin-gate"];
 function showPage(p){
   if(p==="admin-gate"&&adminOn){_switch("admin");_tabs("admin-gate");return;}
   if(p==="filter"){popFilterDropdowns();runFilter();}
   if(p==="staff")renderStaff();
+  if(p==="past")renderPast();
   _switch(p);_tabs(p);
 }
 function _switch(p){document.querySelectorAll(".page").forEach(el=>el.classList.remove("active"));document.getElementById("page-"+p).classList.add("active");}
