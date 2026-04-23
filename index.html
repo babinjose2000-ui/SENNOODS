@@ -349,7 +349,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 
 <script>
 // ─── CONFIG ───────────────────────────────────
-const ADMIN_PIN = "9155";
+const ADMIN_HASH = "2f4e01068ce5298a735284afcb0525efd3c0e2f00bfce3e3197599b16c389d86";
+
+async function checkPassword(){
+  const inp=document.getElementById("pw-input");
+  const val=inp.value;
+  document.getElementById("pin-error").style.display="none";
+  const msgBuffer = new TextEncoder().encode(val);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2,"0")).join("");
+  if(hashHex===ADMIN_HASH){
+    adminOn=true;inp.value="";
+    renderAdmin();_switch("admin");_tabs("admin-gate");
+  } else {
+    document.getElementById("pin-error").style.display="block";
+    inp.value="";inp.focus();
+  }
+}
 
 // ─── STAFF ────────────────────────────────────
 let STAFF = [
@@ -694,18 +711,6 @@ window.refreshAll = refreshAll;
 
 // ─── PASSWORD ─────────────────────────────────
 let adminOn=false;
-function checkPassword(){
-  const inp=document.getElementById("pw-input");
-  const val=inp.value;
-  document.getElementById("pin-error").style.display="none";
-  if(val===ADMIN_PIN){
-    adminOn=true;inp.value="";
-    renderAdmin();_switch("admin");_tabs("admin-gate");
-  } else {
-    document.getElementById("pin-error").style.display="block";
-    inp.value="";inp.focus();
-  }
-}
 
 function adminLogout(){adminOn=false;_switch("view");_tabs("view");showToast("🔒 Admin locked");}
 
