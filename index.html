@@ -189,8 +189,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 .toast{position:fixed;bottom:24px;right:24px;background:var(--header);color:white;padding:12px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;}
 .toast.show{transform:translateY(0);opacity:1;}
 @media(max-width:640px){.nav{padding:0 10px;}.nav-brand .sub{display:none;}.nav-tab{padding:5px 7px;font-size:10px;}.page{padding:12px 8px;}.staff-grid{grid-template-columns:1fr;}.lock-card{width:300px;padding:28px 20px;}}
-/* PAST ROTA */
-.past-week-block{margin-bottom:22px;}
+/* ADMIN INTERNAL TABS */
+.admin-tab{padding:8px 16px;font-size:11px;font-weight:700;border:none;border-bottom:3px solid transparent;cursor:pointer;transition:all .15s;letter-spacing:.5px;background:transparent;color:var(--grey);border-radius:6px 6px 0 0;margin-bottom:-2px;}
+.admin-tab.active{color:var(--amber);border-bottom-color:var(--amber);background:var(--amber-lt);}
+.admin-tab:hover:not(.active){background:var(--grey-lt);color:var(--ink);}
+/* COLLAPSIBLE WEEKS */
+.week-collapse-header{display:flex;align-items:center;justify-content:space-between;background:var(--header);border-radius:6px;padding:8px 14px;cursor:pointer;margin-bottom:4px;user-select:none;}
+.week-collapse-header:hover{background:#2d3f55;}
+.week-collapse-title{font-family:'Bebas Neue',cursive;font-size:14px;color:var(--amber);letter-spacing:2px;}
+.week-collapse-right{display:flex;align-items:center;gap:10px;}
+.week-collapse-arrow{color:#94a3b8;font-size:12px;transition:transform .2s;}
+.week-collapse-arrow.open{transform:rotate(180deg);}
+.week-collapse-body{display:none;margin-bottom:16px;}
+.week-collapse-body.open{display:block;}
 .past-week-label{background:#64748b;color:white;font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:2px;padding:5px 14px;border-radius:6px 6px 0 0;display:inline-block;}
 /* PDF PRINT */
 @media print{
@@ -315,7 +326,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
 <!-- ══ ADMIN EDIT ══ -->
 <div id="page-admin" class="page">
   <div class="admin-header">
-    <div><div class="admin-title">✏️ Admin — Edit Rota</div><span class="admin-badge">🔓 ADMIN MODE</span></div>
+    <div><div class="admin-title">✏️ Admin Panel</div><span class="admin-badge">🔓 ADMIN MODE</span></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-red" onclick="adminLogout()">🔒 Lock</button>
       <button class="btn btn-amber" onclick="saveChanges()">💾 Save Changes</button>
@@ -325,24 +336,79 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-
     <div style="font-size:12px;"><span class="unsaved"></span>You have unsaved changes</div>
     <button class="btn btn-amber" onclick="saveChanges()">💾 Save Now</button>
   </div>
-  <div class="admin-info"><strong>✏️ How to edit:</strong> Click any NETIL, VAN LOCATION, VAN STAFFS or BASE cell to type. Use commas to separate names. Hit Enter or click away — changes save to all pages when you press Save.</div>
 
-  <!-- Staff Manager -->
-  <div class="staff-manager">
-    <div class="staff-manager-title">👥 Staff Members <span style="font-size:11px;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--grey);letter-spacing:0">(add or remove staff)</span></div>
-    <div class="staff-tags-wrap" id="staff-tags"></div>
-    <div class="add-staff-row">
-      <div class="add-group"><div class="add-label">Name</div><input type="text" class="staff-add-input" id="new-name" placeholder="e.g. ALEX" maxlength="20"/></div>
-      <div class="add-group"><div class="add-label">Role</div><input type="text" class="staff-add-input role-input" id="new-role" placeholder="e.g. Netil / Van"/></div>
-      <div class="add-group">
-        <div class="add-label">Colour</div>
-        <div class="color-row" id="color-picker"></div>
+  <!-- Admin Internal Tabs -->
+  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:2px solid #e2e8f0;padding-bottom:0;">
+    <button class="admin-tab active" id="atab-staff" onclick="switchAdminTab('staff')">👥 Staff</button>
+    <button class="admin-tab" id="atab-current" onclick="switchAdminTab('current')">📅 Current Rota</button>
+    <button class="admin-tab" id="atab-past" onclick="switchAdminTab('past')">📁 Past Rota</button>
+    <button class="admin-tab" id="atab-addweek" onclick="switchAdminTab('addweek')">➕ Add Week</button>
+  </div>
+
+  <!-- Tab: Staff -->
+  <div id="atab-content-staff">
+    <div class="admin-info"><strong>👥 Staff:</strong> Add or remove team members. Changes save to Firebase instantly.</div>
+    <div class="staff-manager" style="margin-top:12px;">
+      <div class="staff-tags-wrap" id="staff-tags"></div>
+      <div class="add-staff-row">
+        <div class="add-group"><div class="add-label">Name</div><input type="text" class="staff-add-input" id="new-name" placeholder="e.g. ALEX" maxlength="20"/></div>
+        <div class="add-group"><div class="add-label">Role</div><input type="text" class="staff-add-input role-input" id="new-role" placeholder="e.g. Netil / Van"/></div>
+        <div class="add-group"><div class="add-label">Colour</div><div class="color-row" id="color-picker"></div></div>
+        <div class="add-group" style="justify-content:flex-end"><button class="btn btn-amber" onclick="addStaff()">+ Add</button></div>
       </div>
-      <div class="add-group" style="justify-content:flex-end"><button class="btn btn-amber" onclick="addStaff()">+ Add</button></div>
     </div>
   </div>
 
-  <div id="admin-content"></div>
+  <!-- Tab: Current Rota -->
+  <div id="atab-content-current" style="display:none;">
+    <div class="admin-info"><strong>✏️ How to edit:</strong> Click any cell to type. Use commas to separate names. Click <strong>Save Changes</strong> when done.</div>
+    <div id="admin-content" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- Tab: Past Rota -->
+  <div id="atab-content-past" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+      <div class="admin-info" style="margin-bottom:0;flex:1;"><strong>📁 Past Rota:</strong> Weeks that have ended. Delete individual weeks or clear all at once.</div>
+      <button class="btn btn-red" onclick="clearPastRota()">🗑 Clear All Past</button>
+    </div>
+    <div id="admin-past-content"></div>
+    <div id="admin-past-empty" style="display:none;padding:40px;text-align:center;color:var(--grey);font-size:13px;">📭 No past weeks yet.</div>
+  </div>
+
+  <!-- Tab: Add Week -->
+  <div id="atab-content-addweek" style="display:none;">
+    <div class="admin-info"><strong>➕ Add Week:</strong> Pick the Monday date — all 7 dates fill in automatically!</div>
+    <div class="staff-manager" style="margin-top:12px;">
+      <div class="add-staff-row" style="margin-bottom:14px;align-items:flex-end;gap:14px;">
+        <div class="add-group">
+          <div class="add-label">📅 Pick Monday's Date</div>
+          <input type="date" class="staff-add-input" id="nwd-monday-picker" style="width:180px;" onchange="fillWeekDates()"/>
+        </div>
+        <div class="add-group">
+          <div class="add-label">Week Label (auto-filled)</div>
+          <input type="text" class="staff-add-input" id="new-week-label" placeholder="e.g. Wk7 – 4 May" style="width:220px;"/>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="border-collapse:collapse;min-width:400px;">
+          <thead><tr style="background:var(--header);">
+            <th style="padding:7px 10px;font-size:10px;color:white;letter-spacing:1px;text-align:left;width:130px;">DAY</th>
+            <th style="padding:7px 10px;font-size:10px;color:white;letter-spacing:1px;text-align:left;">DATE (auto-filled)</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:6px 8px;font-size:12px;color:var(--grey);">Monday</td><td style="padding:4px 6px;"><input type="text" class="editable" style="border:1.5px solid #e2e8f0;background:#f8fafc;" placeholder="Pick Monday above" maxlength="10" id="nwd-0" readonly/></td></tr>
+            <tr><td style="padding:6px 8px;font-size:12px;color:var(--grey);">Tuesday</td><td style="padding:4px 6px;"><input type="text" class="editable" style="border:1.5px solid #e2e8f0;background:#f8fafc;" placeholder="Auto" maxlength="10" id="nwd-1" readonly/></td></tr>
+            <tr><td style="padding:6px 8px;font-size:12px;color:var(--grey);">Wednesday</td><td style="padding:4px 6px;"><input type="text" class="editable" style="border:1.5px solid #e2e8f0;background:#f8fafc;" placeholder="Auto" maxlength="10" id="nwd-2" readonly/></td></tr>
+            <tr><td style="padding:6px 8px;font-size:12px;color:var(--grey);">Thursday</td><td style="padding:4px 6px;"><input type="text" class="editable" style="border:1.5px solid #e2e8f0;background:#f8fafc;" placeholder="Auto" maxlength="10" id="nwd-3" readonly/></td></tr>
+            <tr><td style="padding:6px 8px;font-size:12px;color:var(--grey);">Friday</td><td style="padding:4px 6px;"><input type="text" class="editable" style="border:1.5px solid #e2e8f0;background:#f8fafc;" placeholder="Auto" maxlength="10" id="nwd-4" readonly/></td></tr>
+            <tr style="background:#fdf4ff;"><td style="padding:6px 8px;font-size:12px;color:var(--purple);">Saturday</td><td style="padding:4px 6px;"><input type="text" class="editable" style="border:1.5px solid #e2e8f0;background:#f8fafc;" placeholder="Auto" maxlength="10" id="nwd-5" readonly/></td></tr>
+            <tr style="background:#fdf4ff;"><td style="padding:6px 8px;font-size:12px;color:var(--purple);">Sunday</td><td style="padding:4px 6px;"><input type="text" class="editable" style="border:1.5px solid #e2e8f0;background:#f8fafc;" placeholder="Auto" maxlength="10" id="nwd-6" readonly/></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px;"><button class="btn btn-amber" onclick="addWeek()">+ Add Week</button></div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -526,17 +592,38 @@ function renderPast(){
 
 // ─── DOWNLOAD PAST AS PDF ─────────────────────
 function downloadPastPDF(){
-  // Show only past page and print
-  document.querySelectorAll(".page").forEach(p=>p.style.display="none");
-  const pastPage=document.getElementById("page-past");
-  pastPage.style.display="block";
-  window.print();
-  // Restore after print dialog closes
-  setTimeout(()=>{
-    document.querySelectorAll(".page").forEach(p=>p.style.display="");
-    document.querySelectorAll(".page.active").forEach(p=>p.style.display="block");
-    refreshAll();
-  },500);
+  const printWin = window.open('', '_blank');
+  const pastContent = document.getElementById("past-content").innerHTML;
+  const isEmpty = document.getElementById("past-empty").style.display !== "none";
+  printWin.document.write(`<!DOCTYPE html><html><head>
+    <title>SEN NOODS — Past Rota</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0;}
+      body{font-family:'DM Sans',sans-serif;background:white;padding:20px;color:#1a1612;}
+      h1{font-family:'Bebas Neue',cursive;font-size:28px;letter-spacing:3px;color:#1e293b;margin-bottom:4px;}
+      .sub{font-size:11px;color:#6b7280;font-family:'DM Mono',monospace;letter-spacing:1px;margin-bottom:20px;}
+      .week-block{margin-bottom:22px;page-break-inside:avoid;}
+      .past-week-label{background:#64748b;color:white;font-family:'Bebas Neue',cursive;font-size:13px;letter-spacing:2px;padding:5px 14px;border-radius:6px 6px 0 0;display:inline-block;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .rota-table-wrap{overflow-x:auto;border-radius:0 6px 6px 6px;}
+      .rota-table{border-collapse:collapse;width:100%;background:white;}
+      .rota-table td{border:1px solid #ddd;padding:5px 8px;font-size:11px;vertical-align:top;white-space:nowrap;}
+      .row-label{background:#1e293b;color:white;font-size:10px;font-weight:700;letter-spacing:.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .cell-date,.cell-day,.cell-place{background:#1e3a5f;color:white;text-align:center;font-weight:700;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .cell-netil{background:#dce8ff;text-align:center;font-weight:700;color:#1e4fd4;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .cell-van{background:#cffafe;text-align:center;font-weight:700;color:#0891b2;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .cell-staff-v{background:#f8fafc;text-align:center;font-size:10px;}
+      .cell-base{background:#dcfce7;text-align:center;font-weight:700;color:#15803d;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .cell-empty{background:white;}
+      .staff-chip{display:inline-block;padding:2px 7px;border-radius:12px;font-size:11px;font-weight:700;margin:1px;}
+    </style>
+  </head><body>
+    <h1>🍜 SEN NOODS — Past Rota</h1>
+    <div class="sub">Downloaded ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
+    ${isEmpty ? '<p style="color:#6b7280;font-size:14px;padding:40px 0;text-align:center;">No past weeks available.</p>' : pastContent}
+    <script>window.onload=()=>{window.print();window.onafterprint=()=>window.close();}<\/script>
+  </body></html>`);
+  printWin.document.close();
 }
 
 // ─── FILTER ───────────────────────────────────
@@ -625,6 +712,15 @@ function renderStaff(){
   t.appendChild(tb);
 }
 
+// ─── ADMIN INTERNAL TABS ──────────────────────
+function switchAdminTab(tab){
+  ["staff","current","past","addweek"].forEach(t=>{
+    document.getElementById(`atab-${t}`).classList.toggle("active",t===tab);
+    document.getElementById(`atab-content-${t}`).style.display=t===tab?"block":"none";
+  });
+  if(tab==="past") renderAdminPast();
+}
+
 // ─── ADMIN – STAFF MANAGER ────────────────────
 function renderStaffManager(){
   const wrap=document.getElementById("staff-tags");wrap.innerHTML="";
@@ -665,9 +761,23 @@ function removeStaff(i){
 function renderAdmin(){
   renderStaffManager();
   const c=document.getElementById("admin-content");c.innerHTML="";
-  ROTA.forEach((week,wi)=>{
-    const blk=document.createElement("div");blk.className="week-block";
-    blk.innerHTML=`<div class="week-label">${week.week.toUpperCase()}</div>`;
+  const currentWeeks=ROTA.filter(w=>getWeekStatus(w)==="current"||getWeekStatus(w)==="future");
+  if(!currentWeeks.length){c.innerHTML=`<div style="padding:40px;text-align:center;color:var(--grey);font-size:13px;">📭 No current or upcoming weeks. Use ➕ Add Week to create one.</div>`;return;}
+  currentWeeks.forEach((week)=>{
+    const wi=ROTA.indexOf(week);
+    const id=`wk-body-${wi}`;
+    const blk=document.createElement("div");
+    blk.innerHTML=`
+      <div class="week-collapse-header" onclick="toggleWeek('${id}')">
+        <span class="week-collapse-title">${week.week.toUpperCase()}</span>
+        <div class="week-collapse-right">
+          <button class="btn btn-red" style="font-size:10px;padding:3px 9px;" onclick="event.stopPropagation();deleteWeek(${wi})">🗑 Delete</button>
+          <span class="week-collapse-arrow" id="arr-${id}">▼</span>
+        </div>
+      </div>
+      <div class="week-collapse-body" id="${id}"></div>`;
+    c.appendChild(blk);
+    const body=document.getElementById(id);
     const tw=document.createElement("div");tw.className="edit-table-wrap";
     const tbl=document.createElement("table");tbl.className="edit-table";
     tbl.innerHTML=`<thead><tr><th>DATE</th><th>DAY</th><th>NETIL STAFF</th><th>VAN LOCATION</th><th>VAN STAFFS</th><th>BASE</th></tr></thead>`;
@@ -686,8 +796,133 @@ function renderAdmin(){
       });
       tb.appendChild(tr);
     });
-    tbl.appendChild(tb);tw.appendChild(tbl);blk.appendChild(tw);c.appendChild(blk);
+    tbl.appendChild(tb);tw.appendChild(tbl);body.appendChild(tw);
+    // Auto-open current week
+    if(getWeekStatus(week)==="current"){
+      body.classList.add("open");
+      document.getElementById(`arr-${id}`).classList.add("open");
+    }
   });
+}
+function toggleWeek(id){
+  const body=document.getElementById(id);
+  const arr=document.getElementById(`arr-${id}`);
+  body.classList.toggle("open");
+  arr.classList.toggle("open");
+}
+
+// ─── ADMIN – PAST ROTA TAB ────────────────────
+function renderAdminPast(){
+  const c=document.getElementById("admin-past-content");c.innerHTML="";
+  const empty=document.getElementById("admin-past-empty");
+  const pastWeeks=ROTA.filter(w=>getWeekStatus(w)==="past");
+  if(!pastWeeks.length){empty.style.display="block";return;}
+  empty.style.display="none";
+  [...pastWeeks].reverse().forEach(week=>{
+    const wi=ROTA.indexOf(week);
+    const id=`past-body-${wi}`;
+    const blk=document.createElement("div");
+    blk.innerHTML=`
+      <div class="week-collapse-header" onclick="toggleWeek('${id}')" style="background:#475569;">
+        <span class="week-collapse-title">${week.week.toUpperCase()}</span>
+        <div class="week-collapse-right">
+          <button class="btn btn-red" style="font-size:10px;padding:3px 9px;" onclick="event.stopPropagation();deleteWeek(${wi})">🗑 Delete</button>
+          <span class="week-collapse-arrow" id="arr-${id}">▼</span>
+        </div>
+      </div>
+      <div class="week-collapse-body" id="${id}"></div>`;
+    c.appendChild(blk);
+    const body=document.getElementById(id);
+    const tw=document.createElement("div");tw.className="rota-table-wrap";
+    const tbl=document.createElement("table");tbl.className="rota-table";
+    const ROWS=[
+      {key:"date",label:"DATE"},{key:"day",label:"DAY"},
+      {key:"netil",label:"NETIL"},{key:"vanLoc",label:"VAN LOCATION"},
+      {key:"vanStaff",label:"VAN STAFFS"},{key:"base",label:"BASE"},
+    ];
+    ROWS.forEach(row=>{
+      const tr=document.createElement("tr");
+      const lbl=document.createElement("td");lbl.className="row-label";lbl.textContent=row.label;tr.appendChild(lbl);
+      week.days.forEach(d=>{
+        const we=isWE(d.day);if(we)tr.classList.add("weekend");
+        const td=document.createElement("td");td.style.textAlign="center";
+        if(row.key==="date"){td.className="cell-date";td.textContent=d.date;}
+        else if(row.key==="day"){td.className="cell-day";td.textContent=d.day;}
+        else if(row.key==="netil"){td.className="cell-netil";td.innerHTML=pn(d.netil).map(chip).join(" ")||"—";}
+        else if(row.key==="vanLoc"){td.className=d.vanLoc?"cell-van":"cell-empty";td.textContent=d.vanLoc||"";}
+        else if(row.key==="vanStaff"){td.className="cell-staff-v";td.innerHTML=pn(d.vanStaff).map(chip).join(" ")||"";}
+        else if(row.key==="base"){td.className=d.base?"cell-base":"cell-empty";td.innerHTML=d.base?chip(d.base):"";}
+        tr.appendChild(td);
+      });
+      tbl.appendChild(tr);
+    });
+    tw.appendChild(tbl);body.appendChild(tw);
+  });
+}
+function deleteWeek(wi){
+  if(!confirm(`Delete "${ROTA[wi].week}"? This cannot be undone.`))return;
+  const label=ROTA[wi].week;
+  ROTA.splice(wi,1);
+  refreshAll();
+  renderAdmin();
+  renderAdminPast();
+  if(typeof window.saveRotaToFirebase==="function") window.saveRotaToFirebase();
+  showToast(`🗑 ${label} deleted`);
+}
+function fillWeekDates(){
+  const mondayVal=document.getElementById("nwd-monday-picker").value;
+  if(!mondayVal)return;
+  const monday=new Date(mondayVal);
+  if(isNaN(monday))return;
+  const days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  days.forEach((_,i)=>{
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const dd=String(d.getDate()).padStart(2,"0");
+    const mm=String(d.getMonth()+1).padStart(2,"0");
+    const yyyy=d.getFullYear();
+    document.getElementById(`nwd-${i}`).value=`${dd}-${mm}-${yyyy}`;
+  });
+  // Auto fill week label if empty
+  const lbl=document.getElementById("new-week-label");
+  if(!lbl.value){
+    const wkNum=getWeekNumber(monday);
+    const monthName=monday.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+    lbl.value=`Wk${wkNum} – ${monthName}`;
+  }
+}
+function getWeekNumber(d){
+  const onejan=new Date(d.getFullYear(),0,1);
+  return Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
+}
+function addWeek(){
+  const label=document.getElementById("new-week-label").value.trim();
+  if(!label){showToast("⚠️ Enter a week label");return;}
+  if(ROTA.find(w=>w.week===label)){showToast("⚠️ Week label already exists");return;}
+  const days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const newDays=days.map((day,i)=>{
+    const dateVal=document.getElementById(`nwd-${i}`).value.trim();
+    return{date:dateVal||"",day,netil:"",vanLoc:"",vanStaff:"",base:""};
+  });
+  const missingDates=newDays.filter(d=>!d.date);
+  if(missingDates.length){showToast("⚠️ Pick a Monday date first to fill dates");return;}
+  ROTA.push({week:label,days:newDays});
+  document.getElementById("new-week-label").value="";
+  document.getElementById("nwd-monday-picker").value="";
+  for(let i=0;i<7;i++) document.getElementById(`nwd-${i}`).value="";
+  refreshAll();renderAdmin();
+  switchAdminTab("current");
+  if(typeof window.saveRotaToFirebase==="function") window.saveRotaToFirebase();
+  showToast(`✅ ${label} added — go to Current Rota to fill in staff`);
+}
+function clearPastRota(){
+  const pastWeeks=ROTA.filter(w=>getWeekStatus(w)==="past");
+  if(!pastWeeks.length){showToast("📭 No past weeks to clear");return;}
+  if(!confirm(`Delete all ${pastWeeks.length} past week(s)? This cannot be undone.`))return;
+  const keep=ROTA.filter(w=>getWeekStatus(w)!=="past"&&getWeekStatus(w)!=="old");
+  ROTA.length=0;keep.forEach(w=>ROTA.push(w));
+  renderAdminPast();refreshAll();
+  if(typeof window.saveRotaToFirebase==="function") window.saveRotaToFirebase();
+  showToast(`🗑 Past rota cleared`);
 }
 function markUnsaved(){document.getElementById("save-bar").style.display="flex";}
 function saveChanges(){
