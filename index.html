@@ -7,11 +7,14 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
   const firebaseConfig = { databaseURL: "https://sennoods-rota-default-rtdb.firebaseio.com" };
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
+
+  // ── VERSION: bump this number every time you push changes to GitHub ──
+  const HTML_VERSION = 20250423_02;
 
   function toArray(val){
     if(!val) return null;
@@ -19,27 +22,38 @@
     return Object.values(val).filter(Boolean);
   }
 
-  onValue(ref(db, "rota"), (snapshot) => {
-    const data = toArray(snapshot.val());
-    if(data && data.length){
-      ROTA.length = 0;
-      data.forEach(r => ROTA.push(r));
-      if(typeof window.refreshAll === "function") window.refreshAll();
-    }
-  });
+  async function syncOnLoad(){
+    // Read version stored in Firebase
+    const vSnap = await get(ref(db, "version"));
+    const fbVersion = vSnap.exists() ? vSnap.val() : 0;
 
-  onValue(ref(db, "staff"), (snapshot) => {
-    const data = toArray(snapshot.val());
-    if(data && data.length){
-      STAFF.length = 0;
-      data.forEach(s => STAFF.push(s));
+    if(HTML_VERSION > fbVersion){
+      // HTML is newer → push HTML data to Firebase
+      console.log(`🔄 Auto-sync: HTML v${HTML_VERSION} > Firebase v${fbVersion} — pushing HTML data to Firebase`);
+      await set(ref(db, "rota"), ROTA);
+      await set(ref(db, "staff"), STAFF);
+      await set(ref(db, "version"), HTML_VERSION);
+      if(typeof window.refreshAll === "function") window.refreshAll();
+    } else {
+      // Firebase is same or newer → pull from Firebase as normal
+      console.log(`✅ Firebase v${fbVersion} is up to date — loading from Firebase`);
+      const rSnap = await get(ref(db, "rota"));
+      const sSnap = await get(ref(db, "staff"));
+      const rData = toArray(rSnap.val());
+      const sData = toArray(sSnap.val());
+      if(rData && rData.length){ ROTA.length=0; rData.forEach(r=>ROTA.push(r)); }
+      if(sData && sData.length){ STAFF.length=0; sData.forEach(s=>STAFF.push(s)); }
       if(typeof window.refreshAll === "function") window.refreshAll();
     }
-  });
+  }
+
+  // Run sync once DOM + data are ready
+  window.addEventListener("load", ()=> setTimeout(syncOnLoad, 100));
 
   window.saveRotaToFirebase = () => {
     set(ref(db, "rota"), ROTA);
     set(ref(db, "staff"), STAFF);
+    set(ref(db, "version"), HTML_VERSION);
   };
 </script>
 <style>
