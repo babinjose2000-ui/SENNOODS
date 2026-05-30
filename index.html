@@ -14,7 +14,7 @@
   const db = getDatabase(app);
 
   // ── VERSION: bump this number every time you push changes to GitHub ──
-  const HTML_VERSION = 20250423_02;
+  const HTML_VERSION = 20260529_01;
 
   function toArray(val){
     if(!val) return null;
@@ -613,6 +613,52 @@ let ROTA = [
     {date:"30-05-2026",day:"Saturday",  netil:"AHMED,HASSAN",vanLoc:"BIG KENSINGTON MARKET",    vanStaff:"JOHNNY,LEO",                    base:""},
     {date:"31-05-2026",day:"Sunday",    netil:"LEO",         vanLoc:"CATFORD",                  vanStaff:"ANES,AHMED",                    base:""},
   ]},
+  {week:"Wk1 Jun – 1 Jun",days:[
+    {date:"01-06-2026",day:"Monday",    netil:"USH",         vanLoc:"",                              vanStaff:"",                                   base:"BABIN"},
+    {date:"02-06-2026",day:"Tuesday",   netil:"LEO",         vanLoc:"",                              vanStaff:"",                                   base:"BABIN"},
+    {date:"03-06-2026",day:"Wednesday", netil:"ANES",        vanLoc:"CITY POINT",                    vanStaff:"USH,JOHNNY,LEO",                     base:""},
+    {date:"04-06-2026",day:"Thursday",  netil:"USH",         vanLoc:"COWCROSS YARD",                 vanStaff:"HASSAN,JOHNNY",                      base:""},
+    {date:"05-06-2026",day:"Friday",    netil:"IMI,ANES",    vanLoc:"",                              vanStaff:"",                                   base:"BABIN"},
+    {date:"06-06-2026",day:"Saturday",  netil:"HASSAN,LEO",  vanLoc:"FRANCIS ROAD|LONDON CITY ISLAND",vanStaff:"AHMED,ANES",                       base:""},
+    {date:"07-06-2026",day:"Sunday",    netil:"LEO",         vanLoc:"",                              vanStaff:"",                                   base:""},
+  ]},
+  {week:"Wk2 Jun – 8 Jun",days:[
+    {date:"08-06-2026",day:"Monday",    netil:"LEO",         vanLoc:"",                              vanStaff:"",                                   base:"BABIN"},
+    {date:"09-06-2026",day:"Tuesday",   netil:"USH",         vanLoc:"IMPERIAL",                      vanStaff:"IMI,LEO,JOHNNY",                     base:"BABIN"},
+    {date:"10-06-2026",day:"Wednesday", netil:"ANES",        vanLoc:"COWCROSS",                      vanStaff:"JOHNNY,HASSAN",                      base:""},
+    {date:"11-06-2026",day:"Thursday",  netil:"USH",         vanLoc:"COWCROSS",                      vanStaff:"JOHNNY,HASSAN",                      base:""},
+    {date:"12-06-2026",day:"Friday",    netil:"LEO,IMI",     vanLoc:"LONDON CITY ISLAND",            vanStaff:"ANES,USH",                           base:"BABIN"},
+    {date:"13-06-2026",day:"Saturday",  netil:"IMI,LEO",     vanLoc:"LONDON CITY ISLAND",            vanStaff:"ANES,AHMED",                         base:""},
+    {date:"14-06-2026",day:"Sunday",    netil:"LEO",         vanLoc:"BECKENHAM",                     vanStaff:"ANES,AHMED",                         base:""},
+  ]},
+  {week:"Wk3 Jun – 15 Jun",days:[
+    {date:"15-06-2026",day:"Monday",    netil:"USH",         vanLoc:"",                              vanStaff:"",                                   base:"BABIN"},
+    {date:"16-06-2026",day:"Tuesday",   netil:"LEO",         vanLoc:"",                              vanStaff:"",                                   base:"BABIN"},
+    {date:"17-06-2026",day:"Wednesday", netil:"AHMED",       vanLoc:"ISLE OF WIGHT",                 vanStaff:"HASSAN,JOHNNY,ANES,USH,LEO,GODFREY", base:""},
+    {date:"18-06-2026",day:"Thursday",  netil:"BABIN",       vanLoc:"ISLE OF WIGHT",                 vanStaff:"HASSAN,JOHNNY,ANES,USH,LEO,GODFREY", base:""},
+    {date:"19-06-2026",day:"Friday",    netil:"BABIN,AHMED", vanLoc:"ISLE OF WIGHT",                 vanStaff:"HASSAN,JOHNNY,ANES,USH,LEO,GODFREY", base:""},
+    {date:"20-06-2026",day:"Saturday",  netil:"BABIN,AHMED", vanLoc:"ISLE OF WIGHT",                 vanStaff:"HASSAN,JOHNNY,ANES,USH,LEO,GODFREY", base:""},
+    {date:"21-06-2026",day:"Sunday",    netil:"AHMED",       vanLoc:"ISLE OF WIGHT",                 vanStaff:"HASSAN,JOHNNY,ANES,USH,LEO,GODFREY", base:""},
+  ]},
+  {week:"Wk4 Jun – 22 Jun",days:[
+    {date:"22-06-2026",day:"Monday",    netil:"BABIN",       vanLoc:"ISLE OF WIGHT",                 vanStaff:"HASSAN,JOHNNY,ANES,USH,LEO,GODFREY", base:""},
+    {date:"23-06-2026",day:"Tuesday",   netil:"AHMED",       vanLoc:"ISLE OF WIGHT",                 vanStaff:"HASSAN,JOHNNY,ANES,USH,LEO,GODFREY", base:""},
+    {date:"24-06-2026",day:"Wednesday", netil:"AHMED",       vanLoc:"",                              vanStaff:"",                                   base:"BABIN"},
+    {date:"25-06-2026",day:"Thursday",  netil:"ANES",        vanLoc:"CITY POINT",                    vanStaff:"USH,JOHNNY,LEO",                     base:""},
+    {date:"26-06-2026",day:"Friday",    netil:"IMI,LEO",     vanLoc:"WHITE CITY",                    vanStaff:"JOHNNY,HASSAN",                      base:"BABIN"},
+    {date:"27-06-2026",day:"Saturday",  netil:"BABIN,LEO",   vanLoc:"",                              vanStaff:"",                                   base:""},
+    {date:"28-06-2026",day:"Sunday",    netil:"LEO",         vanLoc:"CATFORD",                       vanStaff:"ANES,AHMED",                         base:""},
+  ]},
+  {week:"Wk5 Jun – 29 Jun",days:[
+    {date:"29-06-2026",day:"Monday",    netil:"USH",         vanLoc:"",                              vanStaff:"",                                   base:"BABIN"},
+    {date:"30-06-2026",day:"Tuesday",   netil:"LEO",         vanLoc:"",                              vanStaff:"",                                   base:""},
+    {date:"01-07-2026",day:"Wednesday", netil:"",            vanLoc:"",                              vanStaff:"",                                   base:""},
+    {date:"02-07-2026",day:"Thursday",  netil:"",            vanLoc:"",                              vanStaff:"",                                   base:""},
+    {date:"03-07-2026",day:"Friday",    netil:"",            vanLoc:"",                              vanStaff:"",                                   base:""},
+    {date:"04-07-2026",day:"Saturday",  netil:"",            vanLoc:"",                              vanStaff:"",                                   base:""},
+    {date:"05-07-2026",day:"Sunday",    netil:"",            vanLoc:"",                              vanStaff:"",                                   base:""},
+  ]},
+
 ];
 
 // ─── HELPERS ──────────────────────────────────
