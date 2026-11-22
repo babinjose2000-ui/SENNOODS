@@ -16,8 +16,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // ── VERSION: bump this number every time you push changes to GitHub ──
-    const HTML_VERSION = 20260930_01;
+    // ── VERSION: for tracking only – no longer used to overwrite Firebase ──
+    const HTML_VERSION = 20261122_01;
 
     function toArray(val) {
       if (!val) return null;
@@ -26,28 +26,16 @@
     }
 
     async function syncOnLoad() {
-      // Read version stored in Firebase
-      const vSnap = await get(ref(db, "version"));
-      const fbVersion = vSnap.exists() ? vSnap.val() : 0;
-
-      if (HTML_VERSION > fbVersion) {
-        // HTML is newer → push HTML data to Firebase
-        console.log(`🔄 Auto-sync: HTML v${HTML_VERSION} > Firebase v${fbVersion} — pushing HTML data to Firebase`);
-        await set(ref(db, "rota"), ROTA);
-        await set(ref(db, "staff"), STAFF);
-        await set(ref(db, "version"), HTML_VERSION);
-        if (typeof window.refreshAll === "function") window.refreshAll();
-      } else {
-        // Firebase is same or newer → pull from Firebase as normal
-        console.log(`✅ Firebase v${fbVersion} is up to date — loading from Firebase`);
-        const rSnap = await get(ref(db, "rota"));
-        const sSnap = await get(ref(db, "staff"));
-        const rData = toArray(rSnap.val());
-        const sData = toArray(sSnap.val());
-        if (rData && rData.length) { ROTA.length = 0; rData.forEach(r => ROTA.push(r)); }
-        if (sData && sData.length) { STAFF.length = 0; sData.forEach(s => STAFF.push(s)); }
-        if (typeof window.refreshAll === "function") window.refreshAll();
-      }
+      // ALWAYS load from Firebase — never overwrite it from the HTML file.
+      // Data is only pushed to Firebase when admin clicks "Save Changes".
+      console.log("✅ Loading from Firebase...");
+      const rSnap = await get(ref(db, "rota"));
+      const sSnap = await get(ref(db, "staff"));
+      const rData = toArray(rSnap.val());
+      const sData = toArray(sSnap.val());
+      if (rData && rData.length) { ROTA.length = 0; rData.forEach(r => ROTA.push(r)); }
+      if (sData && sData.length) { STAFF.length = 0; sData.forEach(s => STAFF.push(s)); }
+      if (typeof window.refreshAll === "function") window.refreshAll();
     }
 
     // Run sync once DOM + data are ready
@@ -290,10 +278,17 @@
       color: var(--blue);
     }
 
-    .cell-brix {
+    .cell-brix,
+    .cell-kx,
+    .cell-kingscross {
       background: #fdf3dc;
       text-align: center;
       font-weight: 700;
+      color: #92400e;
+    }
+
+    .role-kx {
+      background: #fdf3dc;
       color: #92400e;
     }
 
@@ -1333,6 +1328,7 @@
           <option value="NETIL">NETIL</option>
           <option value="VAN">VAN</option>
           <option value="BASE">BASE</option>
+          <option value="KINGS CROSS">KINGS CROSS</option>
         </select>
       </div>
       <div class="filter-group">
@@ -1810,7 +1806,7 @@
         pn(d.netil).forEach(n => r.push({ staff: n, date: d.date, day: d.day, role: "NETIL", place: "Netil Market", week: w.week }));
         if (d.vanLoc) pn(d.vanStaff).forEach(n => r.push({ staff: n, date: d.date, day: d.day, role: "VAN", place: d.vanLoc, week: w.week }));
         pn(d.base).forEach(n => r.push({ staff: n, date: d.date, day: d.day, role: "BASE", place: "Base", week: w.week }));
-        pn(d.brixLdn).forEach(n => r.push({ staff: n, date: d.date, day: d.day, role: "BRIX", place: "Brix Ldn", week: w.week }));
+        pn(d.kingsCross || d.brixLdn).forEach(n => r.push({ staff: n, date: d.date, day: d.day, role: "KINGS CROSS", place: "Kings Cross", week: w.week }));
       }));
       return r;
     }
@@ -1850,7 +1846,7 @@
         { key: "date", label: "DATE" }, { key: "day", label: "DAY" }, { key: "place", label: "PLACE" },
         { key: "netil", label: "NETIL (10:45am 5–6pm)" }, { key: "vanLoc", label: "VAN LOCATION" },
         { key: "vanStaff", label: "VAN STAFFS" }, { key: "base", label: "BASE" },
-        { key: "brixLdn", label: "BRIX LDN" },
+        { key: "kingsCross", label: "KINGS CROSS" },
       ];
       ROWS.forEach(row => {
         const tr = document.createElement("tr");
@@ -1865,7 +1861,7 @@
           else if (row.key === "vanLoc") { td.className = d.vanLoc ? "cell-van" : "cell-empty"; td.style.color = "var(--blue)"; td.textContent = d.vanLoc || ""; }
           else if (row.key === "vanStaff") { td.className = "cell-staff-v"; td.innerHTML = pn(d.vanStaff).map(chip).join(" ") || ""; }
           else if (row.key === "base") { td.className = d.base ? "cell-base" : "cell-empty"; td.innerHTML = d.base ? chip(d.base) : ""; }
-          else if (row.key === "brixLdn") { td.className = "cell-brix"; td.innerHTML = pn(d.brixLdn).map(chip).join(" ") || "—"; }
+          else if (row.key === "kingsCross" || row.key === "brixLdn") { td.className = "cell-kx cell-brix"; td.innerHTML = pn(d.kingsCross || d.brixLdn).map(chip).join(" ") || "—"; }
           tr.appendChild(td);
         });
         tbl.appendChild(tr);
@@ -1908,6 +1904,7 @@
       .cell-van{background:#cffafe;text-align:center;font-weight:700;color:#0891b2;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       .cell-staff-v{background:#f8fafc;text-align:center;font-size:10px;}
       .cell-base{background:#dcfce7;text-align:center;font-weight:700;color:#15803d;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      .cell-kx,.cell-kingscross,.cell-brix{background:#fdf3dc;text-align:center;font-weight:700;color:#92400e;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
       .cell-empty{background:white;}
       .staff-chip{display:inline-block;padding:2px 7px;border-radius:12px;font-size:11px;font-weight:700;margin:1px;}
     </style>
@@ -1959,7 +1956,7 @@
       if (!rows.length) { tb.innerHTML = `<tr><td colspan="6" class="no-results">😕 No shifts match the selected filters</td></tr>`; return; }
       rows.forEach(r => {
         const we = isWE(r.day);
-        const rc = r.role === "NETIL" ? "role-netil" : r.role === "VAN" ? "role-van" : "role-base";
+        const rc = r.role === "NETIL" ? "role-netil" : r.role === "VAN" ? "role-van" : (r.role === "KINGS CROSS" || r.role === "BRIX") ? "role-kx" : "role-base";
         const tr = document.createElement("tr"); if (we) tr.className = "f-weekend";
         tr.innerHTML = `<td>${chip(r.staff)}</td>
       <td style="font-family:'DM Mono',monospace;font-size:11px">${r.date}</td>
@@ -2010,6 +2007,7 @@
         const nc = my.filter(r => r.role === "NETIL").length;
         const vc = my.filter(r => r.role === "VAN").length;
         const bc = my.filter(r => r.role === "BASE").length;
+        const kc = my.filter(r => r.role === "KINGS CROSS" || r.role === "BRIX").length;
         const shown = my.slice(0, 5), extra = my.length - 5;
         const card = document.createElement("div"); card.className = "staff-card";
         card.innerHTML = `
@@ -2025,10 +2023,11 @@
         <div class="stat-box"><div class="stat-num" style="color:var(--blue)">${nc}</div><div class="stat-lbl">Netil</div></div>
         <div class="stat-box"><div class="stat-num" style="color:var(--cyan)">${vc}</div><div class="stat-lbl">Van</div></div>
         <div class="stat-box"><div class="stat-num" style="color:var(--green)">${bc}</div><div class="stat-lbl">Base</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:#92400e">${kc}</div><div class="stat-lbl">Kings X</div></div>
       </div>
       <div class="staff-shifts">
         ${shown.map(r => {
-          const rc = r.role === "NETIL" ? "role-netil" : r.role === "VAN" ? "role-van" : "role-base";
+          const rc = r.role === "NETIL" ? "role-netil" : r.role === "VAN" ? "role-van" : (r.role === "KINGS CROSS" || r.role === "BRIX") ? "role-kx" : "role-base";
           return `<div class="shift-item"><span class="shift-date">${r.date} · ${r.day.slice(0, 3)}</span><span class="role-badge ${rc}">${r.role}</span></div>`;
         }
         ).join("")}
@@ -2127,18 +2126,23 @@
         const body = document.getElementById(id);
         const tw = document.createElement("div"); tw.className = "edit-table-wrap";
         const tbl = document.createElement("table"); tbl.className = "edit-table";
-        tbl.innerHTML = `<thead><tr><th>DATE</th><th>DAY</th><th>NETIL STAFF</th><th>VAN LOCATION</th><th>VAN STAFFS</th><th>BASE</th><th>BRIX LDN</th></tr></thead>`;
+        tbl.innerHTML = `<thead><tr><th>DATE</th><th>DAY</th><th>NETIL STAFF</th><th>VAN LOCATION</th><th>VAN STAFFS</th><th>BASE</th><th>KINGS CROSS</th></tr></thead>`;
         const tb = document.createElement("tbody");
         week.days.forEach((d, di) => {
           const tr = document.createElement("tr"); if (isWE(d.day)) tr.className = "weekend-row";
           tr.innerHTML = `<td class="cell-date-admin">${d.date}</td><td class="cell-day-admin">${d.day}</td>`;
-          ["netil", "vanLoc", "vanStaff", "base", "brixLdn"].forEach(f => {
+          ["netil", "vanLoc", "vanStaff", "base", "kingsCross"].forEach(f => {
             const td = document.createElement("td");
             const inp = document.createElement("input"); inp.type = "text"; inp.className = "editable";
-            inp.value = d[f] || "";
-            inp.placeholder = f === "vanLoc" ? "Location or blank" : f === "base" ? "Staff name" : f === "brixLdn" ? "Brix Ldn staff" : "Names, comma-separated";
+            inp.value = (f === "kingsCross" ? (d.kingsCross || d.brixLdn || "") : d[f]) || "";
+            inp.placeholder = f === "vanLoc" ? "Location or blank" : f === "base" ? "Staff name" : f === "kingsCross" ? "Kings Cross staff" : "Names, comma-separated";
             inp.addEventListener("input", () => markUnsaved());
-            inp.addEventListener("change", () => { ROTA[wi].days[di][f] = inp.value.trim(); refreshAll(); });
+            inp.addEventListener("change", () => {
+              const val = inp.value.trim();
+              ROTA[wi].days[di][f] = val;
+              if (f === "kingsCross") ROTA[wi].days[di].brixLdn = val;
+              refreshAll();
+            });
             td.appendChild(inp); tr.appendChild(td);
           });
           tb.appendChild(tr);
@@ -2187,7 +2191,7 @@
           { key: "date", label: "DATE" }, { key: "day", label: "DAY" },
           { key: "netil", label: "NETIL" }, { key: "vanLoc", label: "VAN LOCATION" },
           { key: "vanStaff", label: "VAN STAFFS" }, { key: "base", label: "BASE" },
-          { key: "brixLdn", label: "BRIX LDN" },
+          { key: "kingsCross", label: "KINGS CROSS" },
         ];
         ROWS.forEach(row => {
           const tr = document.createElement("tr");
@@ -2199,7 +2203,7 @@
             else if (row.key === "day") { td.className = "cell-day"; td.textContent = d.day; }
             else if (row.key === "netil") { td.className = "cell-netil"; td.innerHTML = pn(d.netil).map(chip).join(" ") || "—"; }
             else if (row.key === "vanLoc") { td.className = d.vanLoc ? "cell-van" : "cell-empty"; td.textContent = d.vanLoc || ""; }
-            else if (row.key === "brixLdn") { td.className = "cell-brix"; td.innerHTML = pn(d.brixLdn).map(chip).join(" ") || "—"; }
+            else if (row.key === "kingsCross" || row.key === "brixLdn") { td.className = "cell-kx cell-brix"; td.innerHTML = pn(d.kingsCross || d.brixLdn).map(chip).join(" ") || "—"; }
             else if (row.key === "vanStaff") { td.className = "cell-staff-v"; td.innerHTML = pn(d.vanStaff).map(chip).join(" ") || ""; }
             else if (row.key === "base") { td.className = d.base ? "cell-base" : "cell-empty"; td.innerHTML = d.base ? chip(d.base) : ""; }
             tr.appendChild(td);
@@ -2252,7 +2256,7 @@
       const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
       const newDays = days.map((day, i) => {
         const dateVal = document.getElementById(`nwd-${i}`).value.trim();
-        return { date: dateVal || "", day, netil: "", vanLoc: "", vanStaff: "", base: "", brixLdn: "" };
+        return { date: dateVal || "", day, netil: "", vanLoc: "", vanStaff: "", base: "", kingsCross: "", brixLdn: "" };
       });
       const missingDates = newDays.filter(d => !d.date);
       if (missingDates.length) { showToast("⚠️ Pick a Monday date first to fill dates"); return; }
@@ -2290,7 +2294,9 @@
               ROTA[wi].days[di].vanLoc = inp[1].value.trim();
               ROTA[wi].days[di].vanStaff = inp[2].value.trim();
               ROTA[wi].days[di].base = inp[3].value.trim();
-              ROTA[wi].days[di].brixLdn = inp[4].value.trim();
+              const kxVal = inp[4].value.trim();
+              ROTA[wi].days[di].kingsCross = kxVal;
+              ROTA[wi].days[di].brixLdn = kxVal;
             }
           }
           row++;
